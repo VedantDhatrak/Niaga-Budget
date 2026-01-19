@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
@@ -7,7 +8,7 @@ const userRoutes = require('./routes/user');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
-const MONGO_URI = 'mongodb://localhost:27017/niagaBuckWheat';
+const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/niagaBuckWheat';
 
 // Middleware
 app.use(cors());

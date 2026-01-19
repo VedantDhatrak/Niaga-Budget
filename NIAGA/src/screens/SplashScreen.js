@@ -1,6 +1,13 @@
 import React, { useEffect } from 'react';
-import { View, Text, StyleSheet, Image, useColorScheme } from 'react-native';
+import {
+    View,
+    Text,
+    StyleSheet,
+    useColorScheme,
+    ImageBackground,
+} from 'react-native';
 import { Colors } from '../theme/colors';
+import background from '../../assets/background.jpg';
 
 const SplashScreen = ({ navigation }) => {
     const scheme = useColorScheme();
@@ -8,7 +15,6 @@ const SplashScreen = ({ navigation }) => {
     const colors = Colors[theme];
 
     useEffect(() => {
-        // Simulate loading or wait for seconds then navigate
         const timer = setTimeout(() => {
             navigation.replace('Welcome');
         }, 2000);
@@ -17,18 +23,32 @@ const SplashScreen = ({ navigation }) => {
     }, [navigation]);
 
     return (
-        <View style={[styles.container, { backgroundColor: colors.background }]}>
-            <Text style={[styles.logoText, { color: colors.primary }]}>NIAGA</Text>
-            <Text style={[styles.subtitle, { color: colors.text }]}>Welcome</Text>
-        </View>
+        <ImageBackground
+            source={background}
+            style={styles.background}
+            resizeMode="cover"
+        >
+            <View style={styles.content}>
+                <Text style={[styles.logoText, { color: colors.primary }]}>
+                    NIAGA
+                </Text>
+                <Text style={[styles.subtitle, { color: colors.text }]}>
+                    Welcome
+                </Text>
+            </View>
+        </ImageBackground>
     );
 };
 
 const styles = StyleSheet.create({
-    container: {
+    background: {
+        flex: 1,
+    },
+    content: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
+        backgroundColor: 'transparent',
     },
     logoText: {
         fontSize: 48,

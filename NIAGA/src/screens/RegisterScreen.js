@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Alert, useColorScheme } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Alert, useColorScheme, ImageBackground } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '../theme/colors';
 import { CustomInput } from '../components/Input';
 import { CustomButton } from '../components/Button';
+import background from '../../assets/background.jpg';
 
 import client from '../api/client';
 
@@ -87,74 +88,84 @@ const RegisterScreen = ({ navigation }) => {
     };
 
     return (
-        <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+        <ImageBackground
+            source={background}
+            style={styles.background}
+            resizeMode="cover"
+        >
+            <SafeAreaView style={styles.safeArea}>
             <ScrollView contentContainerStyle={styles.scrollContent}>
-                <Text style={[styles.title, { color: colors.primary }]}>Create Account</Text>
+                    <Text style={[styles.title, { color: colors.primary }]}>Create Account</Text>
 
-                <CustomInput
-                    label="Full Name"
-                    placeholder="Enter your name"
-                    value={form.name}
-                    onChangeText={(text) => handleChange('name', text)}
-                    error={errors.name}
-                    theme={theme}
-                />
+                    <CustomInput
+                        label="Full Name"
+                        placeholder="Enter your name"
+                        value={form.name}
+                        onChangeText={(text) => handleChange('name', text)}
+                        error={errors.name}
+                        theme={theme}
+                    />
 
-                <CustomInput
-                    label="Mobile Number"
-                    placeholder="Enter mobile number"
-                    value={form.mobile}
-                    onChangeText={(text) => handleChange('mobile', text)}
-                    error={errors.mobile}
-                    keyboardType="phone-pad"
-                    maxLength={10}
-                    theme={theme}
-                />
+                    <CustomInput
+                        label="Mobile Number"
+                        placeholder="Enter mobile number"
+                        value={form.mobile}
+                        onChangeText={(text) => handleChange('mobile', text)}
+                        error={errors.mobile}
+                        keyboardType="phone-pad"
+                        maxLength={10}
+                        theme={theme}
+                    />
 
-                <CustomInput
-                    label="Email Address"
-                    placeholder="Enter email"
-                    value={form.email}
-                    onChangeText={(text) => handleChange('email', text)}
-                    error={errors.email}
-                    keyboardType="email-address"
-                    theme={theme}
-                />
+                    <CustomInput
+                        label="Email Address"
+                        placeholder="Enter email"
+                        value={form.email}
+                        onChangeText={(text) => handleChange('email', text)}
+                        error={errors.email}
+                        keyboardType="email-address"
+                        theme={theme}
+                    />
 
-                <CustomInput
-                    label="Password"
-                    placeholder="Enter password"
-                    value={form.password}
-                    onChangeText={(text) => handleChange('password', text)}
-                    error={errors.password}
-                    secureTextEntry={!showPassword}
-                    isPassword={true}
-                    onTogglePassword={() => setShowPassword(!showPassword)}
-                    theme={theme}
-                />
+                    <CustomInput
+                        label="Password"
+                        placeholder="Enter password"
+                        value={form.password}
+                        onChangeText={(text) => handleChange('password', text)}
+                        error={errors.password}
+                        secureTextEntry={!showPassword}
+                        isPassword={true}
+                        onTogglePassword={() => setShowPassword(!showPassword)}
+                        theme={theme}
+                    />
 
-                <CustomButton
-                    title="Register"
-                    onPress={handleRegister}
-                    loading={loading}
-                    theme={theme}
-                    style={styles.button}
-                />
+                    <CustomButton
+                        title="Register"
+                        onPress={handleRegister}
+                        loading={loading}
+                        theme={theme}
+                        style={styles.button}
+                    />
 
-                <Text style={[styles.loginLink, { color: colors.text }]}>
-                    Already have an account?{' '}
-                    <Text style={{ color: colors.primary, fontWeight: 'bold' }} onPress={() => navigation.navigate('Login')}>
-                        Log In
+                    <Text style={[styles.loginLink, { color: colors.text }]}>
+                        Already have an account?{' '}
+                        <Text style={{ color: colors.primary, fontWeight: 'bold' }} onPress={() => navigation.navigate('Login')}>
+                            Log In
+                        </Text>
                     </Text>
-                </Text>
-            </ScrollView>
-        </SafeAreaView>
+                </ScrollView>
+            </SafeAreaView>
+        </ImageBackground>
     );
 };
 
 const styles = StyleSheet.create({
-    container: {
+    background: {
         flex: 1,
+    },
+    safeArea: {
+        flex: 1,
+        backgroundColor: 'transparent',
     },
     scrollContent: {
         padding: 20,
@@ -176,5 +187,6 @@ const styles = StyleSheet.create({
         fontSize: 14,
     },
 });
+
 
 export default RegisterScreen;
