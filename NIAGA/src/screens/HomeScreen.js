@@ -580,7 +580,7 @@ const styles = StyleSheet.create({
         marginTop: 12,
         padding: 16,
         borderRadius: 16,
-        backgroundColor: '#1E1E1E',
+        backgroundColor: '#FF7043',
         elevation: 4,
     },
 
@@ -593,12 +593,12 @@ const styles = StyleSheet.create({
     budgetAmount: {
         fontSize: 22,
         fontWeight: '700',
-        color: '#FFFFFF',
+        color: '#000000',
     },
 
     budgetPercent: {
         fontSize: 14,
-        color: '#FF7043',
+        color: '#000000',
         fontWeight: '600',
     },
 
@@ -619,7 +619,7 @@ const styles = StyleSheet.create({
     tapHint: {
         marginTop: 10,
         fontSize: 12,
-        color: '#AAAAAA',
+        color: '#000000',
         textAlign: 'center',
     },
     budgetInfoRow: {
