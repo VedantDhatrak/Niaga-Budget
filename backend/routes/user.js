@@ -38,4 +38,37 @@ router.post('/personalize', auth, async (req, res) => {
     }
 });
 
+// Create/Update Budget
+router.post('/budget', auth, async (req, res) => {
+    try {
+        const { totalBudget, budgetStartDate, budgetEndDate, dailyBudget } = req.body;
+
+        console.log('Update Budget Request:', { userId: req.user.userId, body: req.body });
+
+        const user = await User.findByIdAndUpdate(
+            req.user.userId,
+            {
+                $set: {
+                    totalBudget,
+                    budgetStartDate,
+                    budgetEndDate,
+                    dailyBudget,
+                    isBudgetAssigned: true
+                }
+            },
+            { new: true }
+        ).select('-password');
+
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        console.log('Budget Updated Successfully:', user);
+        res.json(user);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server Error');
+    }
+});
+
 module.exports = router;

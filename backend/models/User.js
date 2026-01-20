@@ -15,6 +15,11 @@ const userSchema = new mongoose.Schema({
         type: Boolean,
         default: false
     },
+    // Budget Fields
+    totalBudget: { type: Number },
+    budgetStartDate: { type: Date },
+    budgetEndDate: { type: Date },
+    dailyBudget: { type: Number },
 }, { timestamps: true });
 
 module.exports = mongoose.model('User', userSchema);

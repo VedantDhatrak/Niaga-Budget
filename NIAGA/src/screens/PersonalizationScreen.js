@@ -84,7 +84,7 @@ const PersonalizationScreen = ({ navigation }) => {
                     onPress: () =>
                         navigation.reset({
                             index: 0,
-                            routes: [{ name: 'Home' }],
+                            routes: [{ name: 'CreateBudget' }],
                         }),
                 },
             ]);
@@ -117,11 +117,11 @@ const PersonalizationScreen = ({ navigation }) => {
                         <Text style={[styles.title, { color: colors.primary }]}>
                             Help Us Personalize Your Experience
                         </Text>
-    
+
                         <Text style={[styles.subtitle, { color: colors.text }]}>
                             Answer a few quick questions to get smarter insights.
                         </Text>
-    
+
                         <View style={styles.card}>
                             <CustomDropdown
                                 label="What do you spend most on?"
@@ -133,7 +133,7 @@ const PersonalizationScreen = ({ navigation }) => {
                                 theme={theme}
                                 placeholder="Select Spending"
                             />
-    
+
                             <CustomDropdown
                                 label="Which best describes you?"
                                 options={lifestyleOptions}
@@ -144,7 +144,7 @@ const PersonalizationScreen = ({ navigation }) => {
                                 theme={theme}
                                 placeholder="Select Lifestyle"
                             />
-    
+
                             <CustomDropdown
                                 label="Account Recovery (Security Question)"
                                 options={securityQuestions}
@@ -155,7 +155,7 @@ const PersonalizationScreen = ({ navigation }) => {
                                 theme={theme}
                                 placeholder="Select Question"
                             />
-    
+
                             <CustomInput
                                 label="Answer"
                                 placeholder={
@@ -171,7 +171,7 @@ const PersonalizationScreen = ({ navigation }) => {
                                 editable={isAnswerEnabled}
                                 highlight={isAnswerEnabled}
                             />
-    
+
                             <CustomInput
                                 label="Write a note for Developer"
                                 placeholder="Hey dattebayou here I would love if you write something for me..."
@@ -182,7 +182,7 @@ const PersonalizationScreen = ({ navigation }) => {
                                 theme={theme}
                                 maxLength={50}
                             />
-    
+
                             <CustomButton
                                 title="Save & Continue"
                                 onPress={handleSave}
@@ -196,7 +196,7 @@ const PersonalizationScreen = ({ navigation }) => {
             </SafeAreaView>
         </ImageBackground>
     );
-    
+
 };
 
 const styles = StyleSheet.create({

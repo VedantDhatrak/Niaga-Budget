@@ -63,11 +63,17 @@ const LoginScreen = ({ navigation }) => {
             setLoading(true);
             try {
                 const response = await client.post('/auth/login', form);
-                const { token, user, isPersonalized } = response.data;
+                const { token, user, isPersonalized, isBudgetAssigned } = response.data;
 
                 login(token, user);
 
-                const targetScreen = isPersonalized ? 'Home' : 'Personalization';
+                let targetScreen = 'Home';
+                if (!isPersonalized) {
+                    targetScreen = 'Personalization';
+                } else if (!isBudgetAssigned) {
+                    targetScreen = 'CreateBudget';
+                }
+
                 navigation.reset({
                     index: 0,
                     routes: [{ name: targetScreen }],
@@ -95,68 +101,68 @@ const LoginScreen = ({ navigation }) => {
             resizeMode="cover"
         >
             <SafeAreaView style={styles.safeArea}>
-    <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 60 : 0}
-    >
-        <ScrollView
-            contentContainerStyle={styles.scrollContent}
-            keyboardShouldPersistTaps="handled"
-            showsVerticalScrollIndicator={false}
-        >
-
-                    <Text style={[styles.title, { color: colors.primary }]}>
-                        Welcome Back
-                    </Text>
-
-                    <CustomInput
-                        label="Email Address"
-                        placeholder="Enter email"
-                        value={form.email}
-                        onChangeText={(text) => handleChange('email', text)}
-                        error={errors.email}
-                        keyboardType="email-address"
-                        theme={theme}
-                    />
-
-                    <CustomInput
-                        label="Password"
-                        placeholder="Enter password"
-                        value={form.password}
-                        onChangeText={(text) => handleChange('password', text)}
-                        error={errors.password}
-                        secureTextEntry
-                        theme={theme}
-                    />
-
-                    <Text
-                        style={[styles.forgotPassword, { color: colors.primary }]}
-                        onPress={handleForgotPassword}
+                <KeyboardAvoidingView
+                    style={{ flex: 1 }}
+                    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                    keyboardVerticalOffset={Platform.OS === 'ios' ? 60 : 0}
+                >
+                    <ScrollView
+                        contentContainerStyle={styles.scrollContent}
+                        keyboardShouldPersistTaps="handled"
+                        showsVerticalScrollIndicator={false}
                     >
-                        Forgot Password?
-                    </Text>
 
-                    <CustomButton
-                        title="Log In"
-                        onPress={handleLogin}
-                        loading={loading}
-                        theme={theme}
-                        style={styles.button}
-                    />
-
-                    <Text style={[styles.registerLink, { color: colors.text }]}>
-                        Don&apos;t have an account?{' '}
-                        <Text
-                            style={{ color: colors.primary, fontWeight: 'bold' }}
-                            onPress={() => navigation.navigate('Register')}
-                        >
-                            Register
+                        <Text style={[styles.title, { color: colors.primary }]}>
+                            Welcome Back
                         </Text>
-                    </Text>
+
+                        <CustomInput
+                            label="Email Address"
+                            placeholder="Enter email"
+                            value={form.email}
+                            onChangeText={(text) => handleChange('email', text)}
+                            error={errors.email}
+                            keyboardType="email-address"
+                            theme={theme}
+                        />
+
+                        <CustomInput
+                            label="Password"
+                            placeholder="Enter password"
+                            value={form.password}
+                            onChangeText={(text) => handleChange('password', text)}
+                            error={errors.password}
+                            secureTextEntry
+                            theme={theme}
+                        />
+
+                        <Text
+                            style={[styles.forgotPassword, { color: colors.primary }]}
+                            onPress={handleForgotPassword}
+                        >
+                            Forgot Password?
+                        </Text>
+
+                        <CustomButton
+                            title="Log In"
+                            onPress={handleLogin}
+                            loading={loading}
+                            theme={theme}
+                            style={styles.button}
+                        />
+
+                        <Text style={[styles.registerLink, { color: colors.text }]}>
+                            Don&apos;t have an account?{' '}
+                            <Text
+                                style={{ color: colors.primary, fontWeight: 'bold' }}
+                                onPress={() => navigation.navigate('Register')}
+                            >
+                                Register
+                            </Text>
+                        </Text>
                     </ScrollView>
                 </KeyboardAvoidingView>
-                </SafeAreaView>
+            </SafeAreaView>
 
         </ImageBackground>
     );
