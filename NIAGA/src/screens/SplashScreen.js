@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useContext } from 'react';
 import {
     View,
     Text,
@@ -7,6 +7,7 @@ import {
     ImageBackground,
 } from 'react-native';
 import { Colors } from '../theme/colors';
+import { AuthContext } from '../context/AuthContext';
 import background from '../../assets/background.jpg';
 
 const SplashScreen = ({ navigation }) => {
@@ -14,13 +15,17 @@ const SplashScreen = ({ navigation }) => {
     const theme = scheme === 'dark' ? 'dark' : 'light';
     const colors = Colors[theme];
 
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            navigation.replace('Welcome');
-        }, 2000);
+    const { loading, userToken } = useContext(AuthContext);
 
-        return () => clearTimeout(timer);
-    }, [navigation]);
+    useEffect(() => {
+        if (!loading) {
+            if (userToken) {
+                navigation.replace('Home');
+            } else {
+                navigation.replace('Welcome');
+            }
+        }
+    }, [loading, userToken, navigation]);
 
     return (
         <ImageBackground
