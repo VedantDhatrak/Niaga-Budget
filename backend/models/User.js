@@ -11,6 +11,10 @@ const userSchema = new mongoose.Schema({
     securityQuestion: { type: String },
     securityAnswer: { type: String },
     devNote: { type: String },
+    isBudgetAssigned: {
+        type: Boolean,
+        default: false
+    },
 }, { timestamps: true });
 
 module.exports = mongoose.model('User', userSchema);
