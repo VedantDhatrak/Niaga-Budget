@@ -1,5 +1,8 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Alert, useColorScheme, ImageBackground } from 'react-native';
+import {
+    View, Text, StyleSheet, ScrollView, Alert, useColorScheme, ImageBackground, KeyboardAvoidingView,
+    Platform,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '../theme/colors';
 import { CustomInput } from '../components/Input';
@@ -94,67 +97,79 @@ const RegisterScreen = ({ navigation }) => {
             resizeMode="cover"
         >
             <SafeAreaView style={styles.safeArea}>
-            <ScrollView contentContainerStyle={styles.scrollContent}>
-                    <Text style={[styles.title, { color: colors.primary }]}>Create Account</Text>
+                <KeyboardAvoidingView
+                    style={{ flex: 1 }}
+                    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                    keyboardVerticalOffset={Platform.OS === 'ios' ? 60 : 0}
+                >
+                    <ScrollView
+                        contentContainerStyle={styles.scrollContent}
+                        keyboardShouldPersistTaps="handled"
+                        showsVerticalScrollIndicator={false}
+                    >
 
-                    <CustomInput
-                        label="Full Name"
-                        placeholder="Enter your name"
-                        value={form.name}
-                        onChangeText={(text) => handleChange('name', text)}
-                        error={errors.name}
-                        theme={theme}
-                    />
+                        <Text style={[styles.title, { color: colors.primary }]}>Create Account</Text>
 
-                    <CustomInput
-                        label="Mobile Number"
-                        placeholder="Enter mobile number"
-                        value={form.mobile}
-                        onChangeText={(text) => handleChange('mobile', text)}
-                        error={errors.mobile}
-                        keyboardType="phone-pad"
-                        maxLength={10}
-                        theme={theme}
-                    />
+                        <CustomInput
+                            label="Full Name"
+                            placeholder="Enter your name"
+                            value={form.name}
+                            onChangeText={(text) => handleChange('name', text)}
+                            error={errors.name}
+                            theme={theme}
+                        />
 
-                    <CustomInput
-                        label="Email Address"
-                        placeholder="Enter email"
-                        value={form.email}
-                        onChangeText={(text) => handleChange('email', text)}
-                        error={errors.email}
-                        keyboardType="email-address"
-                        theme={theme}
-                    />
+                        <CustomInput
+                            label="Mobile Number"
+                            placeholder="Enter mobile number"
+                            value={form.mobile}
+                            onChangeText={(text) => handleChange('mobile', text)}
+                            error={errors.mobile}
+                            keyboardType="phone-pad"
+                            maxLength={10}
+                            theme={theme}
+                        />
 
-                    <CustomInput
-                        label="Password"
-                        placeholder="Enter password"
-                        value={form.password}
-                        onChangeText={(text) => handleChange('password', text)}
-                        error={errors.password}
-                        secureTextEntry={!showPassword}
-                        isPassword={true}
-                        onTogglePassword={() => setShowPassword(!showPassword)}
-                        theme={theme}
-                    />
+                        <CustomInput
+                            label="Email Address"
+                            placeholder="Enter email"
+                            value={form.email}
+                            onChangeText={(text) => handleChange('email', text)}
+                            error={errors.email}
+                            keyboardType="email-address"
+                            theme={theme}
+                        />
 
-                    <CustomButton
-                        title="Register"
-                        onPress={handleRegister}
-                        loading={loading}
-                        theme={theme}
-                        style={styles.button}
-                    />
+                        <CustomInput
+                            label="Password"
+                            placeholder="Enter password"
+                            value={form.password}
+                            onChangeText={(text) => handleChange('password', text)}
+                            error={errors.password}
+                            secureTextEntry={!showPassword}
+                            isPassword={true}
+                            onTogglePassword={() => setShowPassword(!showPassword)}
+                            theme={theme}
+                        />
 
-                    <Text style={[styles.loginLink, { color: colors.text }]}>
-                        Already have an account?{' '}
-                        <Text style={{ color: colors.primary, fontWeight: 'bold' }} onPress={() => navigation.navigate('Login')}>
-                            Log In
+                        <CustomButton
+                            title="Register"
+                            onPress={handleRegister}
+                            loading={loading}
+                            theme={theme}
+                            style={styles.button}
+                        />
+
+                        <Text style={[styles.loginLink, { color: colors.text }]}>
+                            Already have an account?{' '}
+                            <Text style={{ color: colors.primary, fontWeight: 'bold' }} onPress={() => navigation.navigate('Login')}>
+                                Log In
+                            </Text>
                         </Text>
-                    </Text>
-                </ScrollView>
+                    </ScrollView>
+                </KeyboardAvoidingView>
             </SafeAreaView>
+
         </ImageBackground>
     );
 };

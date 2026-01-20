@@ -7,6 +7,8 @@ import {
     Alert,
     useColorScheme,
     ImageBackground,
+    KeyboardAvoidingView,
+    Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '../theme/colors';
@@ -93,7 +95,17 @@ const LoginScreen = ({ navigation }) => {
             resizeMode="cover"
         >
             <SafeAreaView style={styles.safeArea}>
-                <ScrollView contentContainerStyle={styles.scrollContent}>
+    <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 60 : 0}
+    >
+        <ScrollView
+            contentContainerStyle={styles.scrollContent}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+        >
+
                     <Text style={[styles.title, { color: colors.primary }]}>
                         Welcome Back
                     </Text>
@@ -142,8 +154,10 @@ const LoginScreen = ({ navigation }) => {
                             Register
                         </Text>
                     </Text>
-                </ScrollView>
-            </SafeAreaView>
+                    </ScrollView>
+                </KeyboardAvoidingView>
+                </SafeAreaView>
+
         </ImageBackground>
     );
 };
