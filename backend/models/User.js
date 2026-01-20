@@ -1,5 +1,11 @@
 const mongoose = require('mongoose');
 
+const dailySpendingSchema = new mongoose.Schema({
+    amount: { type: Number, required: true },
+    label: { type: String, required: true },
+    date: { type: Date, default: Date.now }
+});
+
 const userSchema = new mongoose.Schema({
     name: { type: String, required: true },
     mobile: { type: String, required: true },
@@ -17,9 +23,11 @@ const userSchema = new mongoose.Schema({
     },
     // Budget Fields
     totalBudget: { type: Number },
-    budgetStartDate: { type: Date },
+    budgetStartDate: { type: Date },    
     budgetEndDate: { type: Date },
     dailyBudget: { type: Number },
+
+    dailySpending: [dailySpendingSchema]
 }, { timestamps: true });
 
 module.exports = mongoose.model('User', userSchema);

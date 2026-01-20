@@ -5,416 +5,380 @@ import {
     StyleSheet,
     useColorScheme,
     FlatList,
-    ActivityIndicator,
     Alert,
     ImageBackground,
     TextInput,
-    TouchableOpacity,Modal
+    TouchableOpacity,
+    Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
+
 import { Colors } from '../theme/colors';
 import { AuthContext } from '../context/AuthContext';
 import client from '../api/client';
 import { CustomButton } from '../components/Button';
-import { Ionicons } from '@expo/vector-icons';
+
 import background from '../../assets/background.jpg';
 
-const HomeScreen = ({ navigation }) => {
+const HomeScreen = () => {
     const scheme = useColorScheme();
     const theme = scheme === 'dark' ? 'dark' : 'light';
     const colors = Colors[theme];
+
     const { userInfo, userToken } = useContext(AuthContext);
 
-    const [transactions, setTransactions] = useState([]);
-    const [loading, setLoading] = useState(false);
-    const [balance, setBalance] = useState(0);
     const [showBudgetSheet, setShowBudgetSheet] = useState(false);
 
+    // 🔢 Spending Entry
+    const [amountInput, setAmountInput] = useState('');
+    const [labelInput, setLabelInput] = useState('');
+    const [dailySpending, setDailySpending] = useState([]);
 
-    const fetchTransactions = async () => {
-        setLoading(true);
-        try {
-            const res = await client.get('/transactions', {
-                headers: { 'x-auth-token': userToken },
-            });
-            setTransactions(res.data);
-            calculateBalance(res.data);
-        } catch (error) {
-            console.log('Error fetching transactions:', error);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const calculateBalance = (data) => {
-        const total = data.reduce((acc, item) => {
-            return item.type === 'income'
-                ? acc + item.amount
-                : acc - item.amount;
-        }, 0);
-        setBalance(total);
-    };
-
-    const addTestTransaction = async () => {
-        try {
-            await client.post(
-                '/transactions',
-                { title: 'Test Income', amount: 1000, type: 'income' },
-                { headers: { 'x-auth-token': userToken } }
-            );
-            fetchTransactions();
-        } catch (error) {
-            Alert.alert('Error', 'Failed to add test transaction');
-        }
-    };
-
+    // Init from userInfo
     useEffect(() => {
-        fetchTransactions();
-    }, []);
+        if (userInfo?.dailySpending) {
+            setDailySpending(userInfo.dailySpending);
+        }
+    }, [userInfo]);
+    const isSameDay = (d1, d2) => {
+        const date1 = new Date(d1);
+        const date2 = new Date(d2);
+    
+        if (isNaN(date1) || isNaN(date2)) return false;
+    
+        return (
+            date1.getFullYear() === date2.getFullYear() &&
+            date1.getMonth() === date2.getMonth() &&
+            date1.getDate() === date2.getDate()
+        );
+    };
+    
 
-    const renderItem = ({ item }) => (
-        <View style={[styles.transactionItem, { backgroundColor: colors.card }]}>
-            <View>
-                <Text style={[styles.transTitle, { color: colors.text }]}>
-                    {item.title}
-                </Text>
-                <Text style={[styles.transDate, { color: colors.text }]}>
-                    {new Date(item.date).toLocaleDateString()}
-                </Text>
-            </View>
-            <Text
-                style={[
-                    styles.transAmount,
-                    {
-                        color:
-                            item.type === 'income'
-                                ? '#4CAF50'
-                                : colors.secondary,
-                    },
-                ]}
-            >
-                {item.type === 'income' ? '+' : '-'}₹{item.amount.toFixed(2)}
-            </Text>
-        </View>
+    const today = new Date();
+    const todaySpending = React.useMemo(() => {
+        const now = new Date();
+        return dailySpending.filter(item =>
+            isSameDay(item.date, now)
+        );
+    }, [dailySpending]);
+    
+    const spentToday = todaySpending.reduce(
+        (sum, item) => sum + item.amount,
+        0
+    );
+    
+    
+
+    const dailyBudget = userInfo?.dailyBudget ?? 0;
+    const remainingBudget = Math.max(dailyBudget - spentToday, 0);
+
+    // ➕ Add Spending
+    const addSpending = async () => {
+        if (!amountInput || !labelInput) {
+            Alert.alert('Please enter amount and label');
+            return;
+        }
+
+        const entry = {
+            amount: Number(amountInput),
+            label: labelInput,
+        };
+
+        try {
+            const res = await client.post('/user/daily-spending', entry, {
+                headers: { 'x-auth-token': userToken }
+            });
+
+            setDailySpending(res.data.dailySpending);
+            setAmountInput('');
+            setLabelInput('');
+        } catch (err) {
+            Alert.alert('Failed to save spending');
+        }
+    };
+
+
+
+
+    // 🔢 Keypad Button
+    const renderKey = (value) => (
+        <TouchableOpacity
+            key={value}
+            style={styles.key}
+            onPress={() => {
+                if (value === '⌫') {
+                    setAmountInput(prev => prev.slice(0, -1));
+                } else {
+                    setAmountInput(prev =>
+                        prev === '0' ? value : prev + value
+                    );
+                }
+            }}
+            
+        >
+            <Text style={styles.keyText}>{value}</Text>
+        </TouchableOpacity>
     );
 
     return (
         <ImageBackground source={background} style={styles.background}>
-            <SafeAreaView style={styles.safeArea}>
+            <SafeAreaView style={styles.safeArea} >
+
+                {/* 🔝 HEADER */}
                 <View style={styles.topHeader}>
                     <TouchableOpacity
-                        activeOpacity={0.9}
                         style={styles.budgetContainer}
                         onPress={() => setShowBudgetSheet(true)}
                     >
-
                         <View>
                             <Text style={styles.budgetLabel}>Today's Budget</Text>
-                            {/* <Text style={styles.budgetSub}>Daily spending limit</Text> */}
+                            <Text style={styles.budgetSub}>Remaining</Text>
                         </View>
 
-                        <View style={styles.budgetRight}>
-                            <Text style={styles.budgetAmount}>₹1,200</Text>
-                            {/* <Text style={styles.budgetCount}>3 left</Text> */}
-                        </View>
+                        <Text style={styles.budgetAmount}>
+                            ₹{remainingBudget}
+                        </Text>
                     </TouchableOpacity>
-
 
                     <TouchableOpacity style={styles.bellContainer}>
-                        <Ionicons
-                            name="notifications-outline"
-                            size={22}
-                            color="#333"
-                        />
+                        <Ionicons name="notifications-outline" size={22} />
                     </TouchableOpacity>
                 </View>
 
-
-
-                {/* Welcome */}
-                <View style={styles.header}>
-                    <Text style={[styles.welcomeText, { color: colors.text }]}>
-                        Hello, {userInfo?.name || 'User'}
-                    </Text>
-                    <Text style={[styles.dateText, { color: colors.text }]}>
-                        {new Date().toLocaleDateString('en-US', {
-                            month: 'long',
-                            year: 'numeric',
-                        })}
-                    </Text>
-                </View>
-
-                {/* Balance Card */}
-                <View style={[styles.card, { backgroundColor: colors.primary }]}>
-                    <Text style={styles.cardLabel}>Total Balance</Text>
-                    <Text style={styles.cardAmount}>
-                        ₹{balance.toFixed(2)}
-                    </Text>
-                    <Text style={styles.cardFooter}>Tracked expenses</Text>
-                </View>
-
-                {/* Actions */}
-                <View style={styles.actions}>
-                    <CustomButton
-                        title="+ Test Income"
-                        onPress={addTestTransaction}
-                        theme={theme}
-                        style={{ flex: 1, marginRight: 10 }}
-                    />
-                    <CustomButton
-                        title="Refresh"
-                        onPress={fetchTransactions}
-                        theme={theme}
-                        type="secondary"
-                        style={{ width: 100 }}
-                    />
-                </View>
-
-                <Text
-                    style={[
-                        styles.sectionTitle,
-                        { color: colors.text, marginTop: 20 },
-                    ]}
-                >
-                    Recent Transactions
+                {/* 💰 AMOUNT DISPLAY */}
+                <Text style={styles.amountDisplay}>
+                    ₹{amountInput || 0}
                 </Text>
 
-                {loading ? (
-                    <ActivityIndicator size="large" color={colors.primary} />
-                ) : (
-                    <FlatList
-                        data={transactions}
-                        keyExtractor={(item) => item._id}
-                        renderItem={renderItem}
-                        contentContainerStyle={styles.listContent}
-                        ListEmptyComponent={
-                            <Text
-                                style={{
-                                    color: colors.text,
-                                    opacity: 0.5,
-                                    textAlign: 'center',
-                                    marginTop: 20,
-                                }}
-                            >
-                                No transactions yet.
+                {/* 🏷 LABEL INPUT */}
+                <TextInput
+                    placeholder="What did you spend on?"
+                    value={labelInput}
+                    onChangeText={setLabelInput}
+                    style={styles.labelInput}
+                />
+
+                {/* 🔢 KEYPAD */}
+                <View style={styles.keypad}>
+                    {['1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '⌫'].map(renderKey)}
+                </View>
+
+                {/* ➕ ADD BUTTON */}
+                <CustomButton
+                    title="Add Spending"
+                    onPress={addSpending}
+                    theme={theme}
+                />
+
+                {/* 🧠 DAILY REFLECTION
+                <Text style={styles.sectionTitle}>Today's Spending</Text>
+
+                <FlatList
+                    data={dailySpending.slice().reverse()}
+                    keyExtractor={(_, i) => i.toString()}
+                    showsVerticalScrollIndicator={false}
+                    renderItem={({ item }) => (
+                        <View style={styles.spendingItem}>
+                            <Text style={styles.spendingLabel}>
+                                {item.label}
                             </Text>
-                        }
-                    />
-                )}
-                {/* 🧾 Budget Bottom Sheet */}
+                            <Text style={styles.spendingAmount}>
+                                -₹{item.amount}
+                            </Text>
+                        </View>
+                    )}
+                /> */}
+
+                {/* 📊 BUDGET SHEET */}
                 <Modal
-    visible={showBudgetSheet}
-    transparent
-    animationType="slide"
-    onRequestClose={() => setShowBudgetSheet(false)}
->
-    {/* Overlay */}
-    <TouchableOpacity
-        style={styles.sheetOverlay}
-        activeOpacity={1}
-        onPress={() => setShowBudgetSheet(false)}
-    />
+                    visible={showBudgetSheet}
+                    transparent
+                    animationType="slide"
+                    onRequestClose={() => setShowBudgetSheet(false)}
+                >
+                    <TouchableOpacity
+                        style={styles.sheetOverlay}
+                        activeOpacity={1}
+                        onPress={() => setShowBudgetSheet(false)}
+                    />
 
-    {/* Sheet */}
-    <ImageBackground
-        source={background}   // 👈 your image
-        resizeMode="cover"
-        style={styles.bottomSheet}
-        imageStyle={{ borderTopLeftRadius: 24, borderTopRightRadius: 24 }}
-    >
-        <View style={styles.sheetInner}>
-        {/* Drag Handle */}
-        <View style={styles.sheetHandle} />
+                    <ImageBackground
+                        source={background}
+                        style={styles.bottomSheet}
+                        imageStyle={{ borderTopLeftRadius: 24, borderTopRightRadius: 24 }}
+                    >
+                        <View style={styles.sheetInner}>
+                            <View style={styles.sheetHandle} />
 
-        <Text style={styles.sheetTitle}>Today's Budget</Text>
+                            <Text style={styles.sheetTitle}>Today's Budget</Text>
 
-        <View style={styles.sheetRow}>
-            <Text style={styles.sheetLabel}>Daily Limit</Text>
-            <Text style={styles.sheetValue}>₹1,200</Text>
-        </View>
+                            <View style={styles.sheetRow}>
+                                <Text style={styles.sheetLabel}>Daily Limit</Text>
+                                <Text style={styles.sheetValue}>₹{dailyBudget}</Text>
+                            </View>
 
-        <View style={styles.sheetRow}>
-            <Text style={styles.sheetLabel}>Spent Today</Text>
-            <Text style={[styles.sheetValue, { color: '#E53935' }]}>
-                ₹450
-            </Text>
-        </View>
+                            <View style={styles.sheetRow}>
+                                <Text style={styles.sheetLabel}>Spent</Text>
+                                <Text style={[styles.sheetValue, { color: '#E53935' }]}>
+                                    ₹{spentToday}
+                                </Text>
+                            </View>
 
-        <View style={styles.sheetRow}>
-            <Text style={styles.sheetLabel}>Remaining</Text>
-            <Text style={[styles.sheetValue, { color: '#2E7D32' }]}>
-                ₹750
-            </Text>
-        </View>
+                            <View style={styles.sheetRow}>
+                                <Text style={styles.sheetLabel}>Remaining</Text>
+                                <Text style={[styles.sheetValue, { color: '#2E7D32' }]}>
+                                    ₹{remainingBudget}
+                                </Text>
+                            </View>
 
-        <CustomButton
-            title="Close"
-            onPress={() => setShowBudgetSheet(false)}
-            theme={theme}
-            style={{ marginTop: 20 }}
-        />
-         </View>
-    </ImageBackground>
-    </Modal>
+                            <CustomButton
+                                title="Close"
+                                onPress={() => setShowBudgetSheet(false)}
+                                theme={theme}
+                                style={{ marginTop: 20 }}
+                            />
+                        </View>
+                    </ImageBackground>
+                </Modal>
+
             </SafeAreaView>
         </ImageBackground>
     );
 };
 
+export default HomeScreen;
+
 const styles = StyleSheet.create({
     background: { flex: 1 },
     safeArea: { flex: 1, paddingHorizontal: 20 },
 
-    /* 🔝 TOP HEADER */
     topHeader: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginTop: 10,
         marginBottom: 16,
     },
 
-    /* Budget Card (80%) */
     budgetContainer: {
-        flex: 1,               // 👈 KEY FIX (instead of 0.8)
+        flex: 1,
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        paddingHorizontal: 16,
-        paddingVertical: 14,
+        padding: 16,
         borderRadius: 16,
         backgroundColor: 'rgba(255,255,255,0.9)',
-        elevation: 4,
     },
 
-    budgetLabel: {
-        fontSize: 14,
-        fontWeight: '600',
-        color: '#333',
-    },
+    budgetLabel: { fontSize: 14, fontWeight: '600' },
+    budgetSub: { fontSize: 12, color: '#666' },
+    budgetAmount: { fontSize: 20, fontWeight: 'bold', color: '#2E7D32' },
 
-    budgetSub: {
-        fontSize: 12,
-        color: '#666',
-        marginTop: 2,
-    },
-
-    budgetRight: {
-        alignItems: 'flex-end',
-    },
-
-    budgetAmount: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        color: '#2E7D32',
-    },
-
-    budgetCount: {
-        fontSize: 12,
-        color: '#888',
-        marginTop: 2,
-    },
-
-    /* Bell (20%) */
     bellContainer: {
-        width: 44,             // 👈 FIXED WIDTH (important)
+        width: 44,
         height: 44,
         marginLeft: 12,
         borderRadius: 22,
         backgroundColor: 'rgba(255,255,255,0.9)',
         alignItems: 'center',
         justifyContent: 'center',
-        elevation: 4,
     },
 
-
-    header: { marginBottom: 20 },
-    welcomeText: { fontSize: 28, fontWeight: 'bold' },
-    dateText: { fontSize: 16, opacity: 0.6 },
-
-    card: {
-        borderRadius: 16,
-        padding: 25,
-        marginBottom: 20,
-        elevation: 5,
-    },
-    cardLabel: { color: 'rgba(255,255,255,0.8)', fontSize: 14 },
-    cardAmount: {
-        color: 'white',
-        fontSize: 36,
+    amountDisplay: {
+        fontSize: 34,
+        textAlign: 'center',
         fontWeight: 'bold',
         marginVertical: 10,
+        color: '#2E7D32',
     },
-    cardFooter: { color: 'rgba(255,255,255,0.9)', fontSize: 12 },
 
-    sectionTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 15 },
-    listContent: { paddingBottom: 30 },
-
-    transactionItem: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        padding: 15,
+    labelInput: {
+        backgroundColor: '#fff',
         borderRadius: 12,
+        padding: 14,
         marginBottom: 10,
     },
-    transTitle: { fontSize: 16, fontWeight: '600' },
-    transDate: { fontSize: 12, opacity: 0.6 },
-    transAmount: { fontSize: 16, fontWeight: 'bold' },
 
-    actions: { flexDirection: 'row', marginBottom: 10 },
-    /* Bottom Sheet */
-    sheetOverlay: {
-        flex: 1,
-        backgroundColor: 'rgba(0,0,0,0.4)',
+    keypad: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        justifyContent: 'space-between',
+        marginVertical: 10,
     },
+
+    key: {
+        width: '30%',
+        height: 60,
+        marginBottom: 12,
+        borderRadius: 12,
+        backgroundColor: 'rgb(44, 41, 41)',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+
+    keyText: { fontSize: 20, fontWeight: 'bold' },
+
+    sectionTitle: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        marginVertical: 14,
+    },
+
+    spendingItem: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        padding: 14,
+        borderRadius: 12,
+        backgroundColor: 'rgba(255,255,255,0.85)',
+        marginBottom: 8,
+    },
+
+    spendingLabel: { fontWeight: '600' },
+    spendingAmount: { fontWeight: 'bold', color: '#E53935' },
+
+    sheetOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)' },
 
     bottomSheet: {
         position: 'absolute',
         bottom: 0,
         left: 0,
         right: 0,
-        height: '90%',  
-        // padding: 20,
+        height: '90%',
         borderTopLeftRadius: 24,
         borderTopRightRadius: 24,
-        // borderTopWidth: 1,                 // 👈 BORDER
-    //     borderWidth:1,
-    // borderColor: 'rgba(255,255,255,0.25)',
-   
-        elevation: 10,
-        overflow: 'hidden',   // 👈 IMPORTANT for rounded corners
-       
+        overflow: 'hidden',
     },
-    
+
+    sheetInner: {
+        flex: 1,
+        padding: 20,
+        borderRadius: 22,
+        borderWidth: 2,
+        borderColor: 'rgba(255,255,255,0.25)',
+    },
+
+    sheetHandle: {
+        width: 40,
+        height: 4,
+        borderRadius: 2,
+        backgroundColor: '#ccc',
+        alignSelf: 'center',
+        marginBottom: 10,
+    },
+
     sheetTitle: {
         fontSize: 20,
         fontWeight: 'bold',
-        marginBottom: 20,
         textAlign: 'center',
+        marginBottom: 20,
         color: '#fff',
     },
-    
-    sheetLabel: {
-        fontSize: 16,
-        color: 'rgba(255,255,255,0.8)',
-    },
-    
-    sheetValue: {
-        fontSize: 16,
-        fontWeight: '600',
-        color: '#fff',
-    },
-    sheetInner: {
-        flex: 1,
-        borderRadius: 22,
-        borderWidth: 3,
-        borderColor: 'rgba(255,255,255,0.25)',
-        padding: 20,
-    },
-    
-    
-    
 
+    sheetRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginBottom: 12,
+    },
+
+    sheetLabel: { color: 'rgba(255,255,255,0.8)' },
+    sheetValue: { fontWeight: 'bold', color: '#fff' },
 });
-
-export default HomeScreen;

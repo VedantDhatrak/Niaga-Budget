@@ -60,7 +60,8 @@ router.post('/login', async (req, res) => {
         const isPersonalized = !!user.spendingPreference;
         const isBudgetAssigned = user.isBudgetAssigned;
 
-        res.json({ token, user: { id: user._id, name: user.name, email: user.email }, isPersonalized, isBudgetAssigned });
+        // res.json({ token, user: { id: user._id, name: user.name, email: user.email }, isPersonalized, isBudgetAssigned });
+        res.json({ token, user, isPersonalized, isBudgetAssigned });
     } catch (err) {
         console.error(err);
         res.status(500).json({ message: 'Server error' });

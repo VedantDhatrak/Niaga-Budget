@@ -71,4 +71,43 @@ router.post('/budget', auth, async (req, res) => {
     }
 });
 
+
+// Add Daily Spending Entry
+router.post('/daily-spending', auth, async (req, res) => {
+    try {
+        const { amount, label } = req.body;
+
+        if (!amount || !label) {
+            return res.status(400).json({ message: 'Amount and label are required' });
+        }
+
+        const user = await User.findById(req.user.userId);
+
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        const spendingEntry = {
+            amount: Number(amount),
+            label,
+            date: new Date()
+        };
+
+        // Push to array
+        user.dailySpending.push(spendingEntry);
+
+        await user.save();
+
+        // Return updated user (without password)
+        const updatedUser = await User.findById(user._id).select('-password');
+
+        res.json(updatedUser);
+
+    } catch (err) {
+        console.error('Daily Spending Error:', err.message);
+        res.status(500).send('Server Error');
+    }
+});
+
+
 module.exports = router;
