@@ -34,6 +34,10 @@ const HomeScreen = () => {
     const [amountInput, setAmountInput] = useState('');
     const [labelInput, setLabelInput] = useState('');
     const [dailySpending, setDailySpending] = useState([]);
+    const [showDetails, setShowDetails] = useState(false);
+    const [showAnalyticsSheet, setShowAnalyticsSheet] = useState(false);
+
+
 
     // Init from userInfo
     useEffect(() => {
@@ -44,16 +48,16 @@ const HomeScreen = () => {
     const isSameDay = (d1, d2) => {
         const date1 = new Date(d1);
         const date2 = new Date(d2);
-    
+
         if (isNaN(date1) || isNaN(date2)) return false;
-    
+
         return (
             date1.getFullYear() === date2.getFullYear() &&
             date1.getMonth() === date2.getMonth() &&
             date1.getDate() === date2.getDate()
         );
     };
-    
+
 
     const today = new Date();
     const todaySpending = React.useMemo(() => {
@@ -62,16 +66,72 @@ const HomeScreen = () => {
             isSameDay(item.date, now)
         );
     }, [dailySpending]);
-    
+
     const spentToday = todaySpending.reduce(
         (sum, item) => sum + item.amount,
         0
     );
-    
-    
 
     const dailyBudget = userInfo?.dailyBudget ?? 0;
     const remainingBudget = Math.max(dailyBudget - spentToday, 0);
+
+    const spentPercentage = dailyBudget
+        ? Math.min((spentToday / dailyBudget) * 100, 100)
+        : 0;
+
+    const remainingPercentage = 100 - spentPercentage;
+
+    const startDate = userInfo?.budgetStartDate
+        ? new Date(userInfo.budgetStartDate)
+        : null;
+
+    const endDate = userInfo?.budgetEndDate
+        ? new Date(userInfo.budgetEndDate)
+        : null;
+
+    const remainingDays =
+        startDate && endDate
+            ? Math.max(
+                Math.ceil(
+                    (endDate - new Date()) / (1000 * 60 * 60 * 24)
+                ),
+                0
+            )
+            : 0;
+
+    const formatDate = (date) =>
+        date
+            ? date.toLocaleDateString('en-IN', {
+                day: '2-digit',
+                month: 'short',
+            })
+            : '--';
+
+            const daysPassed =
+    startDate
+        ? Math.max(
+              Math.ceil(
+                  (new Date() - startDate) / (1000 * 60 * 60 * 24)
+              ),
+              1
+          )
+        : 1;
+
+const avgDailySpend = spentToday
+    ? Math.round(spentToday / daysPassed)
+    : 0;
+
+const expectedSpendTillNow =
+    dailyBudget && startDate && endDate
+        ? Math.round(
+              (dailyBudget / remainingDays + daysPassed) * daysPassed
+          )
+        : 0;
+
+const isOverspending = spentToday > avgDailySpend * daysPassed;
+
+
+
 
     // ➕ Add Spending
     const addSpending = async () => {
@@ -115,7 +175,7 @@ const HomeScreen = () => {
                     );
                 }
             }}
-            
+
         >
             <Text style={styles.keyText}>{value}</Text>
         </TouchableOpacity>
@@ -211,26 +271,88 @@ const HomeScreen = () => {
                         <View style={styles.sheetInner}>
                             <View style={styles.sheetHandle} />
 
-                            <Text style={styles.sheetTitle}>Today's Budget</Text>
+                            <Text style={styles.sheetTitle}>Budget</Text>
 
-                            <View style={styles.sheetRow}>
-                                <Text style={styles.sheetLabel}>Daily Limit</Text>
-                                <Text style={styles.sheetValue}>₹{dailyBudget}</Text>
-                            </View>
+                            <View style={styles.budgetCard}>
 
-                            <View style={styles.sheetRow}>
-                                <Text style={styles.sheetLabel}>Spent</Text>
-                                <Text style={[styles.sheetValue, { color: '#E53935' }]}>
-                                    ₹{spentToday}
+                                {/* 👆 TOGGLER ROW */}
+                                <TouchableOpacity
+                                    style={styles.budgetTopRow}
+                                    activeOpacity={0.8}
+                                    onPress={() => setShowDetails(prev => !prev)}
+                                >
+                                    {!showDetails ? (
+                                        <>
+                                            {/* SPENT VIEW */}
+                                            <Text style={styles.budgetAmount}>₹{spentToday}</Text>
+                                            <Text style={styles.budgetPercent}>
+                                                {spentPercentage.toFixed(0)}% spent
+                                            </Text>
+                                        </>
+                                    ) : (
+                                        <>
+                                            {/* REMAINING VIEW */}
+                                            <Text style={[styles.budgetAmount, { color: '#2E7D32' }]}>
+                                                ₹{remainingBudget}
+                                            </Text>
+                                            <Text style={[styles.budgetPercent, { color: '#2E7D32' }]}>
+                                                {remainingPercentage.toFixed(0)}% left
+                                            </Text>
+                                        </>
+                                    )}
+                                </TouchableOpacity>
+
+                                {/* 📊 PROGRESS BAR (always visible) */}
+                                {/* <View style={styles.progressBar}>
+                                    <View
+                                        style={[
+                                            styles.progressFill,
+                                            { width: `${spentPercentage}%` },
+                                        ]}
+                                    />
+                                </View> */}
+
+                                {/* 🧠 HINT */}
+                                <Text style={styles.tapHint}>
+                                    {showDetails ? 'Tap to view spent' : 'Tap to view remaining'}
                                 </Text>
+
                             </View>
 
-                            <View style={styles.sheetRow}>
-                                <Text style={styles.sheetLabel}>Remaining</Text>
-                                <Text style={[styles.sheetValue, { color: '#2E7D32' }]}>
-                                    ₹{remainingBudget}
-                                </Text>
+                            <View style={styles.budgetInfoRow}>
+
+                                {/* 📦 LEFT BOX — STARTING BUDGET */}
+                                <View style={styles.startBudgetBox}>
+                                    <Text style={styles.infoAmount}>₹{dailyBudget}</Text>
+                                    <Text style={styles.infoLabel}>Starting Budget</Text>
+                                    <Text style={styles.infoSub}>
+                                        {formatDate(startDate)} – {formatDate(endDate)}
+                                    </Text>
+                                </View>
+
+                                {/* 📦 RIGHT BOX — DAYS LEFT */}
+                                <View style={styles.daysLeftBox}>
+                                    <Text style={styles.daysNumber}>{remainingDays}</Text>
+                                    <Text style={styles.daysLabel}>Days Left</Text>
+                                </View>
+
                             </View>
+
+                            <TouchableOpacity
+                                style={styles.analyticsButton}
+                                activeOpacity={0.85}
+                                onPress={() => setShowAnalyticsSheet(true)}
+                            >
+                                <Ionicons
+                                    name="analytics-outline"
+                                    size={20}
+                                    color="#FFFFFF"
+                                    style={{ marginRight: 8 }}
+                                />
+                                <Text style={styles.analyticsText}>View Analytics</Text>
+                            </TouchableOpacity>
+
+
 
                             <CustomButton
                                 title="Close"
@@ -241,6 +363,78 @@ const HomeScreen = () => {
                         </View>
                     </ImageBackground>
                 </Modal>
+
+                <Modal
+    visible={showAnalyticsSheet}
+    transparent
+    animationType="slide"
+    onRequestClose={() => setShowAnalyticsSheet(false)}
+>
+    <TouchableOpacity
+        style={styles.sheetOverlay}
+        activeOpacity={1}
+        onPress={() => setShowAnalyticsSheet(false)}
+    />
+
+    <View style={styles.analyticsSheet}>
+        <View style={styles.sheetHandle} />
+
+        <Text style={styles.sheetTitle}>Analytics</Text>
+
+        {/* 📊 Spent vs Remaining */}
+        <View style={styles.analyticsRow}>
+            <Text style={styles.analyticsLabel}>Spent</Text>
+            <Text style={[styles.analyticsValue, { color: '#E53935' }]}>
+                ₹{spentToday}
+            </Text>
+        </View>
+
+        <View style={styles.analyticsRow}>
+            <Text style={styles.analyticsLabel}>Remaining</Text>
+            <Text style={[styles.analyticsValue, { color: '#2E7D32' }]}>
+                ₹{remainingBudget}
+            </Text>
+        </View>
+
+        {/* 📈 Usage */}
+        <View style={styles.analyticsRow}>
+            <Text style={styles.analyticsLabel}>Budget Used</Text>
+            <Text style={styles.analyticsValue}>
+                {spentPercentage.toFixed(0)}%
+            </Text>
+        </View>
+
+        {/* 📅 Average */}
+        <View style={styles.analyticsRow}>
+            <Text style={styles.analyticsLabel}>Avg / Day</Text>
+            <Text style={styles.analyticsValue}>
+                ₹{avgDailySpend}
+            </Text>
+        </View>
+
+        {/* ⚠️ Status */}
+        <View style={styles.analyticsStatus}>
+            <Text
+                style={[
+                    styles.statusText,
+                    { color: isOverspending ? '#E53935' : '#2E7D32' },
+                ]}
+            >
+                {isOverspending
+                    ? 'You are overspending'
+                    : 'You are on track'}
+            </Text>
+        </View>
+
+        <CustomButton
+            title="Close"
+            onPress={() => setShowAnalyticsSheet(false)}
+            theme={theme}
+            style={{ marginTop: 20 }}
+        />
+    </View>
+</Modal>
+
 
             </SafeAreaView>
         </ImageBackground>
@@ -381,4 +575,162 @@ const styles = StyleSheet.create({
 
     sheetLabel: { color: 'rgba(255,255,255,0.8)' },
     sheetValue: { fontWeight: 'bold', color: '#fff' },
+    budgetCard: {
+        marginHorizontal: 0,
+        marginTop: 12,
+        padding: 16,
+        borderRadius: 16,
+        backgroundColor: '#1E1E1E',
+        elevation: 4,
+    },
+
+    budgetTopRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+    },
+
+    budgetAmount: {
+        fontSize: 22,
+        fontWeight: '700',
+        color: '#FFFFFF',
+    },
+
+    budgetPercent: {
+        fontSize: 14,
+        color: '#FF7043',
+        fontWeight: '600',
+    },
+
+    progressBar: {
+        height: 8,
+        borderRadius: 8,
+        backgroundColor: '#333',
+        overflow: 'hidden',
+        marginTop: 12,
+    },
+
+    progressFill: {
+        height: '100%',
+        backgroundColor: '#FF7043',
+        borderRadius: 8,
+    },
+
+    tapHint: {
+        marginTop: 10,
+        fontSize: 12,
+        color: '#AAAAAA',
+        textAlign: 'center',
+    },
+    budgetInfoRow: {
+        flexDirection: 'row',
+        marginTop: 14,
+        gap: 10,
+    },
+
+    startBudgetBox: {
+        flex: 7,
+        padding: 14,
+        borderRadius: 16,
+        backgroundColor: 'rgba(30,30,30,0.9)',
+    },
+
+    daysLeftBox: {
+        flex: 3,
+        padding: 14,
+        borderRadius: 50,
+        backgroundColor: 'rgba(30,30,30,0.9)',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+
+    infoAmount: {
+        fontSize: 18,
+        fontWeight: '700',
+        color: '#FFFFFF',
+    },
+
+    infoLabel: {
+        fontSize: 12,
+        color: '#AAAAAA',
+        marginTop: 4,
+    },
+
+    infoSub: {
+        fontSize: 12,
+        color: '#888',
+        marginTop: 2,
+    },
+
+    daysNumber: {
+        fontSize: 26,
+        fontWeight: '800',
+        color: '#FF7043',
+    },
+
+    daysLabel: {
+        fontSize: 12,
+        color: '#AAAAAA',
+        marginTop: 4,
+    },
+
+    analyticsButton: {
+        marginTop: 18,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: 14,
+        borderRadius: 16,
+        backgroundColor: '#FF7043',
+    },
+    
+    analyticsText: {
+        fontSize: 16,
+        fontWeight: '700',
+        color: '#FFFFFF',
+    },
+    analyticsSheet: {
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        backgroundColor: '#1E1E1E',
+        borderTopLeftRadius: 24,
+        borderTopRightRadius: 24,
+        padding: 20,
+    },
+    
+    analyticsRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginBottom: 14,
+    },
+    
+    analyticsLabel: {
+        color: '#AAAAAA',
+        fontSize: 14,
+    },
+    
+    analyticsValue: {
+        fontSize: 16,
+        fontWeight: '700',
+        color: '#FFFFFF',
+    },
+    
+    analyticsStatus: {
+        marginTop: 20,
+        padding: 14,
+        borderRadius: 12,
+        backgroundColor: 'rgba(255,255,255,0.05)',
+        alignItems: 'center',
+    },
+    
+    statusText: {
+        fontSize: 16,
+        fontWeight: '700',
+    },
+    
+    
+
+
 });
