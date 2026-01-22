@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "NIAGA",
-    "slug": "NIAGA",
+    "slug": "niaga",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/niaga.png",
@@ -16,14 +16,23 @@
       "supportsTablet": true
     },
     "android": {
+      "package": "com.vedant.niaga",
+      "versionCode": 1,
       "adaptiveIcon": {
         "foregroundImage": "./assets/niaga.png",
         "backgroundColor": "#000000"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "permissions": []
     },
     "web": {
       "favicon": "./assets/niaga.png"
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "33f8f4ea-1cb6-4cbf-82dd-b9a890cae1df"
+      }
+    },
+    "owner": "vedant_dhatrak"
   }
 }
