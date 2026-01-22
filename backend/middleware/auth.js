@@ -1,8 +1,9 @@
 const jwt = require('jsonwebtoken');
+const User = require('../models/User');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret_key';
 
-module.exports = (req, res, next) => {
+module.exports = async (req, res, next) => {
     const token = req.header('x-auth-token');
 
     if (!token) {
@@ -11,9 +12,23 @@ module.exports = (req, res, next) => {
 
     try {
         const decoded = jwt.verify(token, JWT_SECRET);
-        req.user = decoded;
+
+        // Verify user exists
+        const user = await User.findById(decoded.userId);
+
+        if (!user) {
+            return res.status(401).json({ message: 'Token is valid, but user not found' });
+        }
+
+        // Attach user info to request
+        // req.user = user; // better than decoded only
+        // Ensure userId is available for backward compatibility with routes
+        req.user = {
+            ...user.toObject(),
+            userId: user._id
+        };
         next();
     } catch (err) {
-        res.status(401).json({ message: 'Token is not valid' });
+        return res.status(401).json({ message: 'Token is not valid' });
     }
 };

@@ -1,5 +1,6 @@
 import React, { createContext, useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import client from '../api/client';
 
 export const AuthContext = createContext();
 
@@ -47,10 +48,28 @@ export const AuthProvider = ({ children }) => {
         setLoading(false);
     };
 
+    const refreshUserData = async () => {
+        try {
+            const token = await AsyncStorage.getItem('userToken');
+            if (!token) return;
+
+            const res = await client.get('/user/me', {
+                headers: { 'x-auth-token': token }
+            });
+
+            console.log('Refreshed User Data:', res.data);
+            setUserInfo(res.data);
+            await AsyncStorage.setItem('userInfo', JSON.stringify(res.data));
+        } catch (e) {
+            console.log(`refreshUserData error ${e}`);
+        }
+    };
+
     return (
         <AuthContext.Provider value={{
             login,
             logout,
+            refreshUserData,
             userToken,
             userInfo,
             loading

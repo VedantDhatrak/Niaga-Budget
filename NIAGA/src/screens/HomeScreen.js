@@ -26,7 +26,7 @@ const HomeScreen = () => {
     const theme = scheme === 'dark' ? 'dark' : 'light';
     const colors = Colors[theme];
 
-    const { userInfo, userToken } = useContext(AuthContext);
+    const { userInfo, userToken, refreshUserData } = useContext(AuthContext);
 
     const [showBudgetSheet, setShowBudgetSheet] = useState(false);
 
@@ -41,10 +41,25 @@ const HomeScreen = () => {
 
     // Init from userInfo
     useEffect(() => {
+        refreshUserData();
+    }, []);
+
+    useEffect(() => {
+        console.log('HomeScreen userInfo:', JSON.stringify(userInfo, null, 2));
         if (userInfo?.dailySpending) {
             setDailySpending(userInfo.dailySpending);
         }
     }, [userInfo]);
+
+    useEffect(() => {
+        console.log('Budget Debug:', {
+            dailyBudget: userInfo?.dailyBudget,
+            spentToday,
+            remainingBudget,
+            daysPassed,
+            remainingDays
+        });
+    }, [userInfo, spentToday, remainingBudget, daysPassed, remainingDays]);
     const isSameDay = (d1, d2) => {
         const date1 = new Date(d1);
         const date2 = new Date(d2);
@@ -107,28 +122,28 @@ const HomeScreen = () => {
             })
             : '--';
 
-            const daysPassed =
-    startDate
-        ? Math.max(
-              Math.ceil(
-                  (new Date() - startDate) / (1000 * 60 * 60 * 24)
-              ),
-              1
-          )
-        : 1;
+    const daysPassed =
+        startDate
+            ? Math.max(
+                Math.ceil(
+                    (new Date() - startDate) / (1000 * 60 * 60 * 24)
+                ),
+                1
+            )
+            : 1;
 
-const avgDailySpend = spentToday
-    ? Math.round(spentToday / daysPassed)
-    : 0;
-
-const expectedSpendTillNow =
-    dailyBudget && startDate && endDate
-        ? Math.round(
-              (dailyBudget / remainingDays + daysPassed) * daysPassed
-          )
+    const avgDailySpend = spentToday
+        ? Math.round(spentToday / daysPassed)
         : 0;
 
-const isOverspending = spentToday > avgDailySpend * daysPassed;
+    const expectedSpendTillNow =
+        dailyBudget && startDate && endDate
+            ? Math.round(
+                (dailyBudget / remainingDays + daysPassed) * daysPassed
+            )
+            : 0;
+
+    const isOverspending = spentToday > avgDailySpend * daysPassed;
 
 
 
@@ -365,75 +380,75 @@ const isOverspending = spentToday > avgDailySpend * daysPassed;
                 </Modal>
 
                 <Modal
-    visible={showAnalyticsSheet}
-    transparent
-    animationType="slide"
-    onRequestClose={() => setShowAnalyticsSheet(false)}
->
-    <TouchableOpacity
-        style={styles.sheetOverlay}
-        activeOpacity={1}
-        onPress={() => setShowAnalyticsSheet(false)}
-    />
+                    visible={showAnalyticsSheet}
+                    transparent
+                    animationType="slide"
+                    onRequestClose={() => setShowAnalyticsSheet(false)}
+                >
+                    <TouchableOpacity
+                        style={styles.sheetOverlay}
+                        activeOpacity={1}
+                        onPress={() => setShowAnalyticsSheet(false)}
+                    />
 
-    <View style={styles.analyticsSheet}>
-        <View style={styles.sheetHandle} />
+                    <View style={styles.analyticsSheet}>
+                        <View style={styles.sheetHandle} />
 
-        <Text style={styles.sheetTitle}>Analytics</Text>
+                        <Text style={styles.sheetTitle}>Analytics</Text>
 
-        {/* 📊 Spent vs Remaining */}
-        <View style={styles.analyticsRow}>
-            <Text style={styles.analyticsLabel}>Spent</Text>
-            <Text style={[styles.analyticsValue, { color: '#E53935' }]}>
-                ₹{spentToday}
-            </Text>
-        </View>
+                        {/* 📊 Spent vs Remaining */}
+                        <View style={styles.analyticsRow}>
+                            <Text style={styles.analyticsLabel}>Spent</Text>
+                            <Text style={[styles.analyticsValue, { color: '#E53935' }]}>
+                                ₹{spentToday}
+                            </Text>
+                        </View>
 
-        <View style={styles.analyticsRow}>
-            <Text style={styles.analyticsLabel}>Remaining</Text>
-            <Text style={[styles.analyticsValue, { color: '#2E7D32' }]}>
-                ₹{remainingBudget}
-            </Text>
-        </View>
+                        <View style={styles.analyticsRow}>
+                            <Text style={styles.analyticsLabel}>Remaining</Text>
+                            <Text style={[styles.analyticsValue, { color: '#2E7D32' }]}>
+                                ₹{remainingBudget}
+                            </Text>
+                        </View>
 
-        {/* 📈 Usage */}
-        <View style={styles.analyticsRow}>
-            <Text style={styles.analyticsLabel}>Budget Used</Text>
-            <Text style={styles.analyticsValue}>
-                {spentPercentage.toFixed(0)}%
-            </Text>
-        </View>
+                        {/* 📈 Usage */}
+                        <View style={styles.analyticsRow}>
+                            <Text style={styles.analyticsLabel}>Budget Used</Text>
+                            <Text style={styles.analyticsValue}>
+                                {spentPercentage.toFixed(0)}%
+                            </Text>
+                        </View>
 
-        {/* 📅 Average */}
-        <View style={styles.analyticsRow}>
-            <Text style={styles.analyticsLabel}>Avg / Day</Text>
-            <Text style={styles.analyticsValue}>
-                ₹{avgDailySpend}
-            </Text>
-        </View>
+                        {/* 📅 Average */}
+                        <View style={styles.analyticsRow}>
+                            <Text style={styles.analyticsLabel}>Avg / Day</Text>
+                            <Text style={styles.analyticsValue}>
+                                ₹{avgDailySpend}
+                            </Text>
+                        </View>
 
-        {/* ⚠️ Status */}
-        <View style={styles.analyticsStatus}>
-            <Text
-                style={[
-                    styles.statusText,
-                    { color: isOverspending ? '#E53935' : '#2E7D32' },
-                ]}
-            >
-                {isOverspending
-                    ? 'You are overspending'
-                    : 'You are on track'}
-            </Text>
-        </View>
+                        {/* ⚠️ Status */}
+                        <View style={styles.analyticsStatus}>
+                            <Text
+                                style={[
+                                    styles.statusText,
+                                    { color: isOverspending ? '#E53935' : '#2E7D32' },
+                                ]}
+                            >
+                                {isOverspending
+                                    ? 'You are overspending'
+                                    : 'You are on track'}
+                            </Text>
+                        </View>
 
-        <CustomButton
-            title="Close"
-            onPress={() => setShowAnalyticsSheet(false)}
-            theme={theme}
-            style={{ marginTop: 20 }}
-        />
-    </View>
-</Modal>
+                        <CustomButton
+                            title="Close"
+                            onPress={() => setShowAnalyticsSheet(false)}
+                            theme={theme}
+                            style={{ marginTop: 20 }}
+                        />
+                    </View>
+                </Modal>
 
 
             </SafeAreaView>
@@ -683,7 +698,7 @@ const styles = StyleSheet.create({
         borderRadius: 16,
         backgroundColor: '#FF7043',
     },
-    
+
     analyticsText: {
         fontSize: 16,
         fontWeight: '700',
@@ -699,24 +714,24 @@ const styles = StyleSheet.create({
         borderTopRightRadius: 24,
         padding: 20,
     },
-    
+
     analyticsRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         marginBottom: 14,
     },
-    
+
     analyticsLabel: {
         color: '#AAAAAA',
         fontSize: 14,
     },
-    
+
     analyticsValue: {
         fontSize: 16,
         fontWeight: '700',
         color: '#FFFFFF',
     },
-    
+
     analyticsStatus: {
         marginTop: 20,
         padding: 14,
@@ -724,13 +739,13 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(255,255,255,0.05)',
         alignItems: 'center',
     },
-    
+
     statusText: {
         fontSize: 16,
         fontWeight: '700',
     },
-    
-    
+
+
 
 
 });

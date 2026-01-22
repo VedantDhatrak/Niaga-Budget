@@ -8,7 +8,8 @@ const userRoutes = require('./routes/user');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
-const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/niagaBuckWheat';
+// const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/niagaBuckWheat';
+const MONGO_URI = process.env.MONGO_URI || 'mongodb+srv://niagacoofficial_db_user:obeRvsDcwd5hYBU4@nigbud.nqftypu.mongodb.net/?appName=NigBud';
 
 // Middleware
 app.use(cors());
