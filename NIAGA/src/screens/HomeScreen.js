@@ -145,6 +145,21 @@ const HomeScreen = () => {
 
     const isOverspending = spentToday > avgDailySpend * daysPassed;
 
+    const totalSpentTillNow = dailySpending.reduce(
+        (sum, item) => sum + item.amount,
+        0
+    );
+    const totalBudget = userInfo?.totalBudget ?? 0;
+    const remainingTotalBudget = Math.max(
+        totalBudget - totalSpentTillNow,
+        0
+    );
+    const totalSpentPercentage = totalBudget
+        ? Math.min((totalSpentTillNow / totalBudget) * 100, 100)
+        : 0;
+
+    const totalRemainingPercentage = 100 - totalSpentPercentage;
+    const [showTotalDetails, setShowTotalDetails] = useState(false);
 
 
 
@@ -312,6 +327,34 @@ const HomeScreen = () => {
                                             </Text>
                                             <Text style={[styles.budgetPercent, { color: '#2E7D32' }]}>
                                                 {remainingPercentage.toFixed(0)}% left
+                                            </Text>
+                                        </>
+                                    )}
+                                </TouchableOpacity>
+
+                                <TouchableOpacity
+                                    style={styles.budgetTopRow}
+                                    activeOpacity={0.8}
+                                    onPress={() => setShowTotalDetails(prev => !prev)}
+                                >
+                                    {!showTotalDetails ? (
+                                        <>
+                                            {/* SPENT VIEW */}
+                                            <Text style={styles.budgetAmount}>
+                                                ₹{totalSpentTillNow}
+                                            </Text>
+                                            <Text style={styles.budgetPercent}>
+                                                {totalSpentPercentage.toFixed(0)}% spent
+                                            </Text>
+                                        </>
+                                    ) : (
+                                        <>
+                                            {/* REMAINING VIEW */}
+                                            <Text style={[styles.budgetAmount, { color: '#2E7D32' }]}>
+                                                ₹{remainingTotalBudget}
+                                            </Text>
+                                            <Text style={[styles.budgetPercent, { color: '#2E7D32' }]}>
+                                                {totalRemainingPercentage.toFixed(0)}% left
                                             </Text>
                                         </>
                                     )}
