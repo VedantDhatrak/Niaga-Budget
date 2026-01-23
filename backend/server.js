@@ -9,8 +9,7 @@ const userRoutes = require('./routes/user');
 const app = express();
 const PORT = process.env.PORT || 5000;
 // const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/niagaBuckWheat';
-const MONGO_URI = process.env.MONGO_URI || 'mongodb+srv://niagacoofficial_db_user:obeRvsDcwd5hYBU4@nigbud.nqftypu.mongodb.net/?appName=NigBud';
-
+const MONGO_URI = process.env.MONGO_URI ;
 // Middleware
 app.use(cors());
 app.use(express.json());
@@ -35,6 +34,7 @@ app.get('/', (req, res) => {
 });
 
 // Start Server
-app.listen(PORT, '192.168.29.73', () => {
+// app.listen(PORT, '192.168.29.73', () => {
+    app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 });
