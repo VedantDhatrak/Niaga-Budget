@@ -10,6 +10,7 @@ import {
     TextInput,
     TouchableOpacity,
     Modal,
+    Animated, Easing
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -25,6 +26,9 @@ const HomeScreen = () => {
     const scheme = useColorScheme();
     const theme = scheme === 'dark' ? 'dark' : 'light';
     const colors = Colors[theme];
+
+    const hintAnim = React.useRef(new Animated.Value(0)).current;
+
 
     const { userInfo, userToken, refreshUserData } = useContext(AuthContext);
 
@@ -211,14 +215,69 @@ const HomeScreen = () => {
         </TouchableOpacity>
     );
 
+    useEffect(() => {
+        const animation = Animated.loop(
+          Animated.sequence([
+            Animated.timing(hintAnim, {
+              toValue: 1,
+              duration: 500,
+              useNativeDriver: true,
+            }),
+            Animated.timing(hintAnim, {
+              toValue: 0,
+              duration: 500,
+              useNativeDriver: true,
+            }),
+            Animated.delay(3000), // ⏳ wait 3 seconds
+          ])
+        );
+      
+        animation.start();
+      
+        return () => animation.stop(); // cleanup on unmount
+      }, []);
+      
+
+    const animatedChevronStyle = {
+        marginLeft: 6,
+        transform: [
+          {
+            translateY: hintAnim.interpolate({
+              inputRange: [0, 1],
+              outputRange: [0, -6],
+            }),
+          },
+        ],
+        opacity: hintAnim.interpolate({
+          inputRange: [0, 1],
+          outputRange: [0.5, 1],
+        }),
+      };
+      
+
     return (
         <ImageBackground source={background} style={styles.background}>
             <SafeAreaView style={styles.safeArea} >
 
                 {/* 🔝 HEADER */}
                 <View style={styles.topHeader}>
+
+                    {/* <TouchableOpacity
+                            style={styles.budgetContainer}
+                            onPress={() => setShowBudgetSheet(true)}
+                        >
+                            <View>
+                                <Text style={styles.budgetLabel}>Today's Budget</Text>
+                                <Text style={styles.budgetSub}>Remaining</Text>
+                            </View>
+
+                            <Text style={styles.budgetAmount}>
+                                ₹{remainingBudget}
+                            </Text>
+                        </TouchableOpacity> */}
                     <TouchableOpacity
                         style={styles.budgetContainer}
+                        activeOpacity={0.85}
                         onPress={() => setShowBudgetSheet(true)}
                     >
                         <View>
@@ -226,9 +285,16 @@ const HomeScreen = () => {
                             <Text style={styles.budgetSub}>Remaining</Text>
                         </View>
 
-                        <Text style={styles.budgetAmount}>
-                            ₹{remainingBudget}
-                        </Text>
+                        <View style={styles.amountRow}>
+                            <Text style={styles.budgetAmount}>₹{remainingBudget}</Text>
+                            <Animated.View style={animatedChevronStyle}>
+                                <Ionicons
+                                    name="chevron-up-outline"
+                                    size={18}
+                                    color="#fff"
+                                />
+                            </Animated.View>
+                        </View>
                     </TouchableOpacity>
 
                     <TouchableOpacity style={styles.bellContainer}>
@@ -293,11 +359,13 @@ const HomeScreen = () => {
                         onPress={() => setShowBudgetSheet(false)}
                     />
 
-                    <ImageBackground
+                    {/* <ImageBackground
                         source={background}
                         style={styles.bottomSheet}
                         imageStyle={{ borderTopLeftRadius: 24, borderTopRightRadius: 24 }}
-                    >
+                    > */}
+                    <View style={styles.bottomSheet}>
+
                         <View style={styles.sheetInner}>
                             <View style={styles.sheetHandle} />
 
@@ -419,7 +487,9 @@ const HomeScreen = () => {
                                 style={{ marginTop: 20 }}
                             />
                         </View>
-                    </ImageBackground>
+                    </View>
+
+                    {/* </ImageBackground> */}
                 </Modal>
 
                 <Modal
@@ -518,19 +588,24 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         padding: 16,
         borderRadius: 16,
-        backgroundColor: 'rgba(255,255,255,0.9)',
+        backgroundColor: '#00572A',
     },
 
     budgetLabel: { fontSize: 14, fontWeight: '600' },
-    budgetSub: { fontSize: 12, color: '#666' },
-    budgetAmount: { fontSize: 20, fontWeight: 'bold', color: '#2E7D32' },
+    budgetSub: { fontSize: 12, color: '#000000' },
+    budgetAmount: { fontSize: 20, fontWeight: 'bold', color: '#74FC9F' },
+    amountRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+      },
+      
 
     bellContainer: {
         width: 44,
         height: 44,
         marginLeft: 12,
         borderRadius: 22,
-        backgroundColor: 'rgba(255,255,255,0.9)',
+        backgroundColor: '#304579',
         alignItems: 'center',
         justifyContent: 'center',
     },
@@ -540,11 +615,11 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         fontWeight: 'bold',
         marginVertical: 10,
-        color: '#2E7D32',
+        color: '#FFFFFF',
     },
 
     labelInput: {
-        backgroundColor: '#fff',
+        backgroundColor: '#2F3035',
         borderRadius: 12,
         padding: 14,
         marginBottom: 10,
@@ -562,12 +637,12 @@ const styles = StyleSheet.create({
         height: 60,
         marginBottom: 12,
         borderRadius: 12,
-        backgroundColor: 'rgb(44, 41, 41)',
+        backgroundColor: '#2F3035',
         alignItems: 'center',
         justifyContent: 'center',
     },
 
-    keyText: { fontSize: 20, fontWeight: 'bold' },
+    keyText: { fontSize: 20, fontWeight: 'bold', color: "#FFFFFF" },
 
     sectionTitle: {
         fontSize: 18,
@@ -595,35 +670,38 @@ const styles = StyleSheet.create({
         left: 0,
         right: 0,
         height: '90%',
+        // backgroundColor: 'rgb(74, 74, 74)',   // 👈 white background
+        backgroundColor: '#121318',   // 👈 white background
         borderTopLeftRadius: 24,
         borderTopRightRadius: 24,
         overflow: 'hidden',
     },
 
+
     sheetInner: {
         flex: 1,
         padding: 20,
-        borderRadius: 22,
-        borderWidth: 2,
-        borderColor: 'rgba(255,255,255,0.25)',
     },
+
 
     sheetHandle: {
         width: 40,
         height: 4,
         borderRadius: 2,
-        backgroundColor: '#ccc',
+        backgroundColor: '#BBBBBB',
         alignSelf: 'center',
         marginBottom: 10,
     },
+
 
     sheetTitle: {
         fontSize: 20,
         fontWeight: 'bold',
         textAlign: 'center',
         marginBottom: 20,
-        color: '#fff',
+        color: '#FFFFFF',
     },
+
 
     sheetRow: {
         flexDirection: 'row',
@@ -638,7 +716,7 @@ const styles = StyleSheet.create({
         marginTop: 12,
         padding: 16,
         borderRadius: 16,
-        backgroundColor: '#FF7043',
+        backgroundColor: '#904C01',
         elevation: 4,
     },
 
@@ -690,17 +768,18 @@ const styles = StyleSheet.create({
         flex: 7,
         padding: 14,
         borderRadius: 16,
-        backgroundColor: 'rgba(30,30,30,0.9)',
+        backgroundColor: '#333439',
     },
 
     daysLeftBox: {
         flex: 3,
         padding: 14,
         borderRadius: 50,
-        backgroundColor: 'rgba(30,30,30,0.9)',
+        backgroundColor: '#333439',
         alignItems: 'center',
         justifyContent: 'center',
     },
+
 
     infoAmount: {
         fontSize: 18,
@@ -710,25 +789,25 @@ const styles = StyleSheet.create({
 
     infoLabel: {
         fontSize: 12,
-        color: '#AAAAAA',
+        color: '#FFFFFF',
         marginTop: 4,
     },
 
     infoSub: {
         fontSize: 12,
-        color: '#888',
+        color: '#FFFFFF',
         marginTop: 2,
     },
 
     daysNumber: {
         fontSize: 26,
         fontWeight: '800',
-        color: '#FF7043',
+        color: '#FFFFFF',
     },
 
     daysLabel: {
         fontSize: 12,
-        color: '#AAAAAA',
+        color: '#666',
         marginTop: 4,
     },
 
@@ -739,7 +818,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         paddingVertical: 14,
         borderRadius: 16,
-        backgroundColor: '#FF7043',
+        backgroundColor: '#904C01',
     },
 
     analyticsText: {
