@@ -13,7 +13,8 @@ const ENV = {
 
 // CHANGE THIS VAR TO SWITCH ENVIRONMENTS
 // Options: ENV.dev | ENV.prod
-const CURRENT_ENV = ENV.prod;
+// const CURRENT_ENV = ENV.prod;
+const CURRENT_ENV = ENV.dev;
 
 const getBaseUrl = () => {
     if (CURRENT_ENV === ENV.prod) {

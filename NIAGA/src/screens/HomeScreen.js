@@ -22,7 +22,7 @@ import { CustomButton } from '../components/Button';
 
 import background from '../../assets/background.jpg';
 
-const HomeScreen = () => {
+const HomeScreen = ({ navigation }) => {
     const scheme = useColorScheme();
     const theme = scheme === 'dark' ? 'dark' : 'light';
     const colors = Colors[theme];
@@ -217,50 +217,110 @@ const HomeScreen = () => {
 
     useEffect(() => {
         const animation = Animated.loop(
-          Animated.sequence([
-            Animated.timing(hintAnim, {
-              toValue: 1,
-              duration: 500,
-              useNativeDriver: true,
-            }),
-            Animated.timing(hintAnim, {
-              toValue: 0,
-              duration: 500,
-              useNativeDriver: true,
-            }),
-            Animated.delay(3000), // ⏳ wait 3 seconds
-          ])
+            Animated.sequence([
+                Animated.timing(hintAnim, {
+                    toValue: 1,
+                    duration: 500,
+                    useNativeDriver: true,
+                }),
+                Animated.timing(hintAnim, {
+                    toValue: 0,
+                    duration: 500,
+                    useNativeDriver: true,
+                }),
+                Animated.delay(3000), // ⏳ wait 3 seconds
+            ])
         );
-      
+
         animation.start();
-      
+
         return () => animation.stop(); // cleanup on unmount
-      }, []);
-      
+    }, []);
+
 
     const animatedChevronStyle = {
         marginLeft: 6,
         transform: [
-          {
-            translateY: hintAnim.interpolate({
-              inputRange: [0, 1],
-              outputRange: [0, -6],
-            }),
-          },
+            {
+                translateY: hintAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [0, -6],
+                }),
+            },
         ],
         opacity: hintAnim.interpolate({
-          inputRange: [0, 1],
-          outputRange: [0.5, 1],
+            inputRange: [0, 1],
+            outputRange: [0.5, 1],
         }),
-      };
-      
+    };
+
+
+
+    // 🕰️ Expiration Check
+    const [showExpirationModal, setShowExpirationModal] = useState(false);
+
+    useEffect(() => {
+        if (userInfo?.budgetEndDate) {
+            const end = new Date(userInfo.budgetEndDate);
+            const now = new Date();
+            // Reset time to compare dates only or check if now is strictly after end date
+            if (now > end) {
+                setShowExpirationModal(true);
+            }
+        }
+    }, [userInfo]);
+
+    const handleArchiveBudget = async () => {
+        try {
+            await client.post('/user/archive-budget', {}, {
+                headers: { 'x-auth-token': userToken }
+            });
+            await refreshUserData();
+            setShowExpirationModal(false);
+
+            // Navigate to CreateBudget logic
+            // Resetting stack to ensure they can't go back to Home without a budget
+            navigation.reset({
+                index: 0,
+                routes: [{ name: 'CreateBudget' }],
+            });
+
+        } catch (err) {
+            console.error(err);
+            Alert.alert('Error', 'Failed to archive budget');
+        }
+    };
+
 
     return (
         <ImageBackground source={background} style={styles.background}>
             <SafeAreaView style={styles.safeArea} >
 
+                {/* 🕰️ EXPIRATION MODAL */}
+                <Modal
+                    visible={showExpirationModal}
+                    transparent
+                    animationType="fade"
+                >
+                    <View style={styles.sheetOverlay}>
+                        <View style={[styles.bottomSheet, { height: 'auto', padding: 20, justifyContent: 'center', alignItems: 'center', backgroundColor: '#1E1E1E', margin: 20, borderRadius: 20, bottom: 'auto', top: '30%' }]}>
+                            <Ionicons name="documents-outline" size={50} color={colors.primary} style={{ marginBottom: 10 }} />
+                            <Text style={{ fontSize: 22, fontWeight: 'bold', color: '#fff', marginBottom: 10 }}>Budget Completed!</Text>
+                            <Text style={{ fontSize: 16, color: '#ccc', textAlign: 'center', marginBottom: 20 }}>
+                                Your budget period has ended. Great job tracking your expenses! Let's wrap this up and start fresh.
+                            </Text>
+                            <CustomButton
+                                title="Archive & Start New"
+                                onPress={handleArchiveBudget}
+                                theme={theme}
+                            />
+                        </View>
+                    </View>
+                </Modal>
+
                 {/* 🔝 HEADER */}
                 <View style={styles.topHeader}>
+
 
                     {/* <TouchableOpacity
                             style={styles.budgetContainer}
@@ -597,8 +657,8 @@ const styles = StyleSheet.create({
     amountRow: {
         flexDirection: 'row',
         alignItems: 'center',
-      },
-      
+    },
+
 
     bellContainer: {
         width: 44,

@@ -40,7 +40,7 @@ export default function App() {
             <Stack.Screen name="Login" component={LoginScreen} />
             <Stack.Screen name="Personalization" component={PersonalizationScreen} />
             <Stack.Screen name="CreateBudget" component={CreateBudgetScreen} />
-            <Stack.Screen name="Home" component={TabNavigator} />
+            <Stack.Screen name="MainApp" component={TabNavigator} />
           </Stack.Navigator>
         </NavigationContainer>
       </SafeAreaProvider>

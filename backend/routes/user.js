@@ -124,4 +124,47 @@ router.post('/daily-spending', auth, async (req, res) => {
 });
 
 
+
+// Archive Current Budget
+router.post('/archive-budget', auth, async (req, res) => {
+    try {
+        const user = await User.findById(req.user.userId);
+        if (!user) return res.status(404).json({ message: 'User not found' });
+
+        // Calculate total spent
+        const totalSpent = user.dailySpending.reduce((sum, item) => sum + item.amount, 0);
+
+        // Create history entry
+        const historyEntry = {
+            startDate: user.budgetStartDate,
+            endDate: user.budgetEndDate,
+            totalBudget: user.totalBudget,
+            dailyBudget: user.dailyBudget,
+            totalSpent: totalSpent,
+            spendingEntries: [...user.dailySpending],
+            archivedAt: new Date()
+        };
+
+        // Update user: push history, reset current fields
+        user.budgetHistory.push(historyEntry);
+
+        // Reset current budget fields
+        user.dailySpending = [];
+        user.totalBudget = 0;
+        user.dailyBudget = 0;
+        user.budgetStartDate = null;
+        user.budgetEndDate = null;
+        user.isBudgetAssigned = false;
+
+        await user.save();
+
+        const updatedUser = await User.findById(user._id).select('-password');
+        res.json(updatedUser);
+
+    } catch (err) {
+        console.error('Archive Budget Error:', err.message);
+        res.status(500).send('Server Error');
+    }
+});
+
 module.exports = router;

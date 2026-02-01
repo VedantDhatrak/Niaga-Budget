@@ -20,7 +20,7 @@ const SplashScreen = ({ navigation }) => {
     useEffect(() => {
         if (!loading) {
             if (userToken) {
-                navigation.replace('Home');
+                navigation.replace('MainApp');
             } else {
                 navigation.replace('Welcome');
             }

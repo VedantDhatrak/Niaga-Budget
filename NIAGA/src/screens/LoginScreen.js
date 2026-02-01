@@ -67,7 +67,7 @@ const LoginScreen = ({ navigation }) => {
 
                 login(token, user);
 
-                let targetScreen = 'Home';
+                let targetScreen = 'MainApp';
                 if (!isPersonalized) {
                     targetScreen = 'Personalization';
                 } else if (!isBudgetAssigned) {

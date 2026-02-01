@@ -23,11 +23,22 @@ const userSchema = new mongoose.Schema({
     },
     // Budget Fields
     totalBudget: { type: Number },
-    budgetStartDate: { type: Date },    
+    budgetStartDate: { type: Date },
     budgetEndDate: { type: Date },
     dailyBudget: { type: Number },
 
-    dailySpending: [dailySpendingSchema]
+    dailySpending: [dailySpendingSchema],
+
+    // Budget History
+    budgetHistory: [{
+        startDate: Date,
+        endDate: Date,
+        totalBudget: Number,
+        dailyBudget: Number,
+        totalSpent: Number,
+        spendingEntries: [dailySpendingSchema],
+        archivedAt: { type: Date, default: Date.now }
+    }]
 }, { timestamps: true });
 
 module.exports = mongoose.model('User', userSchema);
