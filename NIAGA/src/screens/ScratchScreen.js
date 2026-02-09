@@ -44,11 +44,11 @@ const ScratchScreen = () => {
     const theme = scheme === 'dark' ? 'dark' : 'light';
     const colors = Colors[theme];
 
-    
+
     const { userInfo } = useContext(AuthContext);
     const dailySpending = userInfo?.dailySpending ?? [];
-    
-      
+
+
 
     // Sort latest first
     const sortedSpending = useMemo(() => {

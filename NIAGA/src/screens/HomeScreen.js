@@ -362,6 +362,9 @@ const HomeScreen = ({ navigation }) => {
                     </TouchableOpacity>
                 </View>
 
+                {/* Spacer to push content to bottom */}
+                <View style={{ flex: 1 }} />
+
                 {/* 💰 AMOUNT DISPLAY */}
                 <Text style={styles.amountDisplay}>
                     ₹{amountInput || 0}
