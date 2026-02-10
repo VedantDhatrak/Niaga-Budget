@@ -43,7 +43,8 @@ const BillsScreen = () => {
             setBills(res.data);
         } catch (error) {
             console.log('Error fetching bills:', error);
-            Alert.alert('Error', 'Failed to fetch bills');
+            const errorMessage = error.response ? `Status: ${error.response.status} - ${error.response.data.message || error.message}` : error.message;
+            Alert.alert('Fetch Error', `Failed to fetch bills: ${errorMessage}`);
         } finally {
             setLoading(false);
         }
@@ -122,7 +123,8 @@ const BillsScreen = () => {
             fetchBills();
         } catch (error) {
             console.log('Upload error:', error);
-            Alert.alert('Error', 'Failed to upload bill');
+            const errorMessage = error.response ? `Status: ${error.response.status} - ${error.response.data.message || error.message}` : error.message;
+            Alert.alert('Upload Error', `Failed to upload bill: ${errorMessage}`);
         } finally {
             setUploading(false);
         }
@@ -311,6 +313,16 @@ const BillsScreen = () => {
                     </View>
                 </SafeAreaView>
             </Modal>
+
+            {/* Debug Info for APK */}
+            <View style={{ padding: 10, backgroundColor: '#333', margin: 10, borderRadius: 8 }}>
+                <Text style={{ color: 'yellow', fontSize: 10 }}>Debug API: {client.defaults.baseURL}</Text>
+                {bills.length === 0 && !loading && (
+                    <Text style={{ color: 'red', fontSize: 10, marginTop: 4 }}>
+                        No bills found. If this is unexpected, check API connection.
+                    </Text>
+                )}
+            </View>
 
             {/* List */}
             {loading ? (
