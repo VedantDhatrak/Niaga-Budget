@@ -9,12 +9,13 @@ const LOCAL_URL_ANDROID = 'http://192.168.29.73:5000/api';
 const ENV = {
     dev: 'development',
     prod: 'production',
+    local: 'local'
 };
 
-// CHANGE THIS VAR TO SWITCH ENVIRONMENTS
-// Options: ENV.dev | ENV.prod
-// const CURRENT_ENV = ENV.prod;
-const CURRENT_ENV = ENV.dev;
+// CHANGE THIS VAR TO SWITCH ENVIRONMENTS Options: ENV.dev | ENV.prod
+
+const CURRENT_ENV = ENV.prod;
+// const CURRENT_ENV = ENV.dev;
 
 const getBaseUrl = () => {
     if (CURRENT_ENV === ENV.prod) {

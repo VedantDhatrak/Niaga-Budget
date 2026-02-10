@@ -15,6 +15,8 @@ import TabNavigator from './src/navigation/TabNavigator';
 import { Colors } from './src/theme/colors';
 import { AuthProvider } from './src/context/AuthContext';
 
+import { ServerStatusProvider } from './src/context/ServerStatusProvider';
+
 const Stack = createNativeStackNavigator();
 
 export default function App() {
@@ -24,26 +26,28 @@ export default function App() {
   const customColors = isDark ? Colors.dark : Colors.light;
 
   return (
-    <AuthProvider>
-      <SafeAreaProvider>
-        <NavigationContainer theme={theme}>
-          <StatusBar style={isDark ? 'light' : 'dark'} />
-          <Stack.Navigator
-            initialRouteName="Splash"
-            screenOptions={{
-              headerShown: false,
-            }}
-          >
-            <Stack.Screen name="Splash" component={SplashScreen} />
-            <Stack.Screen name="Welcome" component={WelcomeScreen} />
-            <Stack.Screen name="Register" component={RegisterScreen} />
-            <Stack.Screen name="Login" component={LoginScreen} />
-            <Stack.Screen name="Personalization" component={PersonalizationScreen} />
-            <Stack.Screen name="CreateBudget" component={CreateBudgetScreen} />
-            <Stack.Screen name="MainApp" component={TabNavigator} />
-          </Stack.Navigator>
-        </NavigationContainer>
-      </SafeAreaProvider>
-    </AuthProvider>
+    <ServerStatusProvider>
+      <AuthProvider>
+        <SafeAreaProvider>
+          <NavigationContainer theme={theme}>
+            <StatusBar style={isDark ? 'light' : 'dark'} />
+            <Stack.Navigator
+              initialRouteName="Splash"
+              screenOptions={{
+                headerShown: false,
+              }}
+            >
+              <Stack.Screen name="Splash" component={SplashScreen} />
+              <Stack.Screen name="Welcome" component={WelcomeScreen} />
+              <Stack.Screen name="Register" component={RegisterScreen} />
+              <Stack.Screen name="Login" component={LoginScreen} />
+              <Stack.Screen name="Personalization" component={PersonalizationScreen} />
+              <Stack.Screen name="CreateBudget" component={CreateBudgetScreen} />
+              <Stack.Screen name="MainApp" component={TabNavigator} />
+            </Stack.Navigator>
+          </NavigationContainer>
+        </SafeAreaProvider>
+      </AuthProvider>
+    </ServerStatusProvider>
   );
 }
