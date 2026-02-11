@@ -27,15 +27,19 @@
 
 // export default ScratchScreen;
 
-import React, { useMemo, useContext } from 'react';
+import React, { useMemo, useContext, useState } from 'react';
 import {
     View,
     Text,
     StyleSheet,
     FlatList,
     useColorScheme,
+    TouchableOpacity,
+    ActivityIndicator,
+    Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../theme/colors';
 import { AuthContext } from '../context/AuthContext'; // adjust path if needed
 
@@ -45,8 +49,23 @@ const ScratchScreen = () => {
     const colors = Colors[theme];
 
 
-    const { userInfo } = useContext(AuthContext);
+    const { userInfo, refreshUserData } = useContext(AuthContext);
     const dailySpending = userInfo?.dailySpending ?? [];
+    const [refreshing, setRefreshing] = useState(false);
+
+    const handleRefresh = async () => {
+        if (refreshing) return;
+        setRefreshing(true);
+        try {
+            await refreshUserData();
+        } catch (error) {
+            console.log("Refresh error:", error);
+            const errorMessage = error.message || "Failed to refresh history.";
+            Alert.alert("Error", errorMessage);
+        } finally {
+            setRefreshing(false);
+        }
+    };
 
 
 
@@ -83,9 +102,18 @@ const ScratchScreen = () => {
             style={[styles.container, { backgroundColor: colors.background }]}
             edges={['left', 'right', 'top']} // avoid bottom tab gap
         >
-            <Text style={[styles.title, { color: colors.text }]}>
-                Spending History
-            </Text>
+            <View style={styles.headerRow}>
+                <Text style={[styles.title, { color: colors.text }]}>
+                    Spending History
+                </Text>
+                <TouchableOpacity disabled={refreshing} onPress={handleRefresh} style={styles.refreshButton}>
+                    {refreshing ? (
+                        <ActivityIndicator size="small" color={colors.primary} />
+                    ) : (
+                        <Ionicons name="refresh" size={24} color={colors.primary} />
+                    )}
+                </TouchableOpacity>
+            </View>
 
             {sortedSpending.length === 0 ? (
                 <Text style={[styles.emptyText, { color: colors.textMuted }]}>
@@ -109,10 +137,18 @@ const styles = StyleSheet.create({
         flex: 1,
         paddingHorizontal: 16,
     },
+    headerRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginVertical: 12,
+    },
     title: {
         fontSize: 22,
         fontWeight: '700',
-        marginVertical: 12,
+    },
+    refreshButton: {
+        padding: 4,
     },
     list: {
         paddingBottom: 20,

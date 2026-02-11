@@ -66,6 +66,7 @@ export const AuthProvider = ({ children }) => {
                 console.log('Token expired/invalid, logging out...');
                 logout();
             }
+            throw e; // Propagate error for UI handling
         }
     };
 

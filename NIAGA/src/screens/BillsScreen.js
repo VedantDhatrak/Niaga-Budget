@@ -25,6 +25,7 @@ const BillsScreen = () => {
     const [selectedFile, setSelectedFile] = useState(null);
     const [uploading, setUploading] = useState(false);
     const [loading, setLoading] = useState(true);
+    const [refreshing, setRefreshing] = useState(false);
     const [modalVisible, setModalVisible] = useState(false);
 
     // View Modal State
@@ -37,7 +38,8 @@ const BillsScreen = () => {
         }
     }, [userInfo]);
 
-    const fetchBills = async () => {
+    const fetchBills = async (isRefresh = false) => {
+        if (!isRefresh) setLoading(true);
         try {
             const res = await client.get(`/bills/${userInfo._id}`);
             setBills(res.data);
@@ -46,8 +48,15 @@ const BillsScreen = () => {
             const errorMessage = error.response ? `Status: ${error.response.status} - ${error.response.data.message || error.message}` : error.message;
             Alert.alert('Fetch Error', `Failed to fetch bills: ${errorMessage}`);
         } finally {
-            setLoading(false);
+            if (!isRefresh) setLoading(false);
         }
+    };
+
+    const handleRefresh = async () => {
+        if (loading || refreshing) return;
+        setRefreshing(true);
+        await fetchBills(true);
+        setRefreshing(false);
     };
 
     const pickImage = async () => {
@@ -201,7 +210,16 @@ const BillsScreen = () => {
 
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-            <Text style={[styles.title, { color: colors.text }]}>Bills Manager</Text>
+            <View style={styles.headerRow}>
+                <Text style={[styles.title, { color: colors.text, marginBottom: 0 }]}>Bills Manager</Text>
+                <TouchableOpacity onPress={handleRefresh} disabled={refreshing || loading} style={styles.refreshButton}>
+                    {(refreshing) ? (
+                        <ActivityIndicator size="small" color={colors.primary} />
+                    ) : (
+                        <Ionicons name="refresh" size={24} color={colors.primary} />
+                    )}
+                </TouchableOpacity>
+            </View>
 
             {/* Upload Modal */}
             <Modal
@@ -349,7 +367,16 @@ const BillsScreen = () => {
 
 const styles = StyleSheet.create({
     container: { flex: 1, padding: 16 },
-    title: { fontSize: 24, fontWeight: 'bold', marginBottom: 20 },
+    headerRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 20,
+    },
+    title: { fontSize: 24, fontWeight: 'bold' },
+    refreshButton: {
+        padding: 8,
+    },
 
     // FAB
     fab: {
