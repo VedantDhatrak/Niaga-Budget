@@ -6,6 +6,7 @@ import {
     useColorScheme,
     ScrollView,
     TouchableOpacity,
+    Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '../theme/colors';
@@ -90,6 +91,21 @@ const ProfileScreen = ({ navigation }) => {
                     <SettingRow label="Security Question" />
                 </Section>
 
+                {/* ================= Support ================= */}
+                <Section title="Support" colors={colors}>
+                    <TouchableOpacity
+                        style={styles.settingRow}
+                        activeOpacity={0.7}
+                        onPress={() => Linking.openURL('mailto:niaga.co.official@gmail.com')}
+                    >
+                        <View>
+                            <Text style={styles.settingLabel}>Contact Us</Text>
+                            <Text style={styles.settingValue}>niaga.co.official@gmail.com</Text>
+                        </View>
+                        <Ionicons name="chevron-forward" size={18} color="#999" />
+                    </TouchableOpacity>
+                </Section>
+
                 {/* ================= Danger Zone ================= */}
                 <View style={[styles.dangerZone, { borderColor: colors.border }]}>
                     <CustomButton
@@ -109,11 +125,11 @@ const ProfileScreen = ({ navigation }) => {
 const UserAvatar = ({ color, name }) => {
     const initials = name
         ? name
-              .split(' ')
-              .map(n => n[0])
-              .join('')
-              .substring(0, 2)
-              .toUpperCase()
+            .split(' ')
+            .map(n => n[0])
+            .join('')
+            .substring(0, 2)
+            .toUpperCase()
         : 'JD';
 
     return (

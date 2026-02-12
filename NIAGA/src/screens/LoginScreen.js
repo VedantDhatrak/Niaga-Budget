@@ -33,6 +33,8 @@ const LoginScreen = ({ navigation }) => {
     const [errors, setErrors] = useState({});
     const [loading, setLoading] = useState(false);
 
+    const [isPasswordVisible, setIsPasswordVisible] = useState(false);
+
     const handleChange = (key, value) => {
         setForm({ ...form, [key]: value });
         if (errors[key]) {
@@ -132,7 +134,9 @@ const LoginScreen = ({ navigation }) => {
                             value={form.password}
                             onChangeText={(text) => handleChange('password', text)}
                             error={errors.password}
-                            secureTextEntry
+                            secureTextEntry={!isPasswordVisible}
+                            isPassword={true}
+                            onTogglePassword={() => setIsPasswordVisible(!isPasswordVisible)}
                             theme={theme}
                         />
 
