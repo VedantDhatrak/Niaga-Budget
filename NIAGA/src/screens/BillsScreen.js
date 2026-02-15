@@ -326,21 +326,21 @@ const BillsScreen = () => {
                     <View style={styles.viewModalFooter}>
                         <TouchableOpacity style={styles.shareButton} onPress={handleShare}>
                             <Ionicons name="share-social" size={24} color="white" />
-                            <Text style={styles.shareButtonText}>Share / Open</Text>
+                            <Text style={styles.shareButtonText}>Share</Text>
                         </TouchableOpacity>
                     </View>
                 </SafeAreaView>
             </Modal>
 
             {/* Debug Info for APK */}
-            <View style={{ padding: 10, backgroundColor: '#333', margin: 10, borderRadius: 8 }}>
+            {/* <View style={{ padding: 10, backgroundColor: '#333', margin: 10, borderRadius: 8 }}>
                 <Text style={{ color: 'yellow', fontSize: 10 }}>Debug API: {client.defaults.baseURL}</Text>
                 {bills.length === 0 && !loading && (
                     <Text style={{ color: 'red', fontSize: 10, marginTop: 4 }}>
                         No bills found. If this is unexpected, check API connection.
                     </Text>
                 )}
-            </View>
+            </View> */}
 
             {/* List */}
             {loading ? (

@@ -8,7 +8,7 @@ const client = axios.create({
 });
 
 // DEBUG: Show API URL on device
-Alert.alert('Debug API URL', ENV.API_URL);
+// Alert.alert('Debug API URL', ENV.API_URL);
 console.log('API Client Initialized with URL:', ENV.API_URL);
 
 // Add a way to communicate with the UI (ServerStatusContext)
