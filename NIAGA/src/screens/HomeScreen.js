@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState } from 'react';
+import React, { useContext, useEffect, useMemo, useState } from 'react';
 import {
     View,
     Text,
@@ -38,6 +38,8 @@ const HomeScreen = ({ navigation }) => {
     const [showDetails, setShowDetails] = useState(false);
     const [showAnalyticsSheet, setShowAnalyticsSheet] = useState(false);
     const [showTotalDetails, setShowTotalDetails] = useState(false);
+    const [showNotificationsSheet, setShowNotificationsSheet] = useState(false);
+    const [notificationsRead, setNotificationsRead] = useState(false);
 
     const budget = useBudgetCalculations(userInfo);
     const {
@@ -63,6 +65,46 @@ const HomeScreen = ({ navigation }) => {
 
     const analyticsDangerColor = theme === 'dark' ? colors.secondary : '#E53935';
     const analyticsSuccessColor = '#2E7D32';
+
+    // In-app notifications derived from budget state
+    const notifications = useMemo(() => {
+        const list = [];
+        if (isOverspending) {
+            list.push({
+                id: 'overspending',
+                type: 'warning',
+                title: 'Overspending',
+                body: "You're overspending this period. Consider adjusting your spending.",
+            });
+        }
+        if (spentPercentage >= 80 && dailyBudget > 0) {
+            list.push({
+                id: 'daily-80',
+                type: 'warning',
+                title: 'Daily budget alert',
+                body: `You've used ${spentPercentage.toFixed(0)}% of today's budget. ₹${remainingBudget} left.`,
+            });
+        }
+        if (remainingDays > 0 && remainingDays <= 3) {
+            list.push({
+                id: `period-${remainingDays}`,
+                type: 'info',
+                title: 'Period ending soon',
+                body: `Budget period ends in ${remainingDays} day${remainingDays === 1 ? '' : 's'}. Plan to archive.`,
+            });
+        }
+        if (spentPercentage < 50 && dailyBudget > 0 && !isOverspending) {
+            list.push({
+                id: 'on-track',
+                type: 'success',
+                title: "You're on track",
+                body: `₹${remainingBudget} remaining today. Keep it up!`,
+            });
+        }
+        return list;
+    }, [isOverspending, spentPercentage, dailyBudget, remainingBudget, remainingDays]);
+
+    const unreadCount = notificationsRead ? 0 : notifications.length;
 
     useEffect(() => {
         refreshUserData();
@@ -228,8 +270,26 @@ const HomeScreen = ({ navigation }) => {
                         </View>
                     </TouchableOpacity>
 
-                    <TouchableOpacity style={styles.bellContainer}>
-                        <Ionicons name="notifications-outline" size={22} />
+                    <TouchableOpacity
+                        style={styles.bellContainer}
+                        onPress={() => {
+                            setNotificationsRead(true);
+                            setShowNotificationsSheet(true);
+                        }}
+                        activeOpacity={0.85}
+                    >
+                        {unreadCount > 0 && (
+                            <View style={styles.bellBadge}>
+                                <Text style={styles.bellBadgeText}>
+                                    {unreadCount > 9 ? '9+' : unreadCount}
+                                </Text>
+                            </View>
+                        )}
+                        <Ionicons
+                            name={unreadCount > 0 ? 'notifications' : 'notifications-outline'}
+                            size={22}
+                            color="#FFFFFF"
+                        />
                     </TouchableOpacity>
                 </View>
 
@@ -514,6 +574,56 @@ const HomeScreen = ({ navigation }) => {
                     </View>
                 </DraggableBottomSheet>
 
+                {/* 🔔 NOTIFICATIONS SHEET */}
+                <DraggableBottomSheet
+                    visible={showNotificationsSheet}
+                    onClose={() => setShowNotificationsSheet(false)}
+                    sheetStyle={{ backgroundColor: '#121318' }}
+                >
+                    <View style={{ flex: 1, minHeight: 0 }}>
+                        <Text style={styles.sheetTitle}>Notifications</Text>
+                        <ScrollView
+                            style={{ flex: 1 }}
+                            showsVerticalScrollIndicator={false}
+                            contentContainerStyle={{ paddingBottom: 24 }}
+                        >
+                            {notifications.length === 0 ? (
+                                <View style={styles.notificationEmpty}>
+                                    <Ionicons name="notifications-off-outline" size={48} color="#666" style={{ marginBottom: 12 }} />
+                                    <Text style={styles.notificationEmptyText}>No notifications</Text>
+                                    <Text style={styles.notificationEmptySub}>You're all set. Check back for budget alerts.</Text>
+                                </View>
+                            ) : (
+                                notifications.map((item) => (
+                                    <View key={item.id} style={styles.notificationItem}>
+                                        <View style={[
+                                            styles.notificationIconWrap,
+                                            item.type === 'warning' && { backgroundColor: 'rgba(229,57,53,0.2)' },
+                                            item.type === 'success' && { backgroundColor: 'rgba(46,125,50,0.2)' },
+                                            item.type === 'info' && { backgroundColor: 'rgba(48,71,121,0.3)' },
+                                        ]}>
+                                            <Ionicons
+                                                name={item.type === 'warning' ? 'warning' : item.type === 'success' ? 'checkmark-circle' : 'information-circle'}
+                                                size={22}
+                                                color={item.type === 'warning' ? '#E53935' : item.type === 'success' ? '#2E7D32' : '#7B9FD6'}
+                                            />
+                                        </View>
+                                        <View style={styles.notificationContent}>
+                                            <Text style={styles.notificationTitle}>{item.title}</Text>
+                                            <Text style={styles.notificationBody}>{item.body}</Text>
+                                        </View>
+                                    </View>
+                                ))
+                            )}
+                            <CustomButton
+                                title="Close"
+                                onPress={() => setShowNotificationsSheet(false)}
+                                theme={theme}
+                                style={{ marginTop: 20 }}
+                            />
+                        </ScrollView>
+                    </View>
+                </DraggableBottomSheet>
 
             </SafeAreaView>
         </ImageBackground>
@@ -559,6 +669,70 @@ const styles = StyleSheet.create({
         backgroundColor: '#304579',
         alignItems: 'center',
         justifyContent: 'center',
+    },
+    bellBadge: {
+        position: 'absolute',
+        top: -2,
+        right: -2,
+        minWidth: 18,
+        height: 18,
+        borderRadius: 9,
+        backgroundColor: '#E53935',
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingHorizontal: 4,
+    },
+    bellBadgeText: {
+        fontSize: 10,
+        fontWeight: '700',
+        color: '#FFFFFF',
+    },
+    notificationEmpty: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: 48,
+        paddingHorizontal: 24,
+    },
+    notificationEmptyText: {
+        fontSize: 18,
+        fontWeight: '600',
+        color: '#FFFFFF',
+        marginBottom: 4,
+    },
+    notificationEmptySub: {
+        fontSize: 14,
+        color: '#999',
+        textAlign: 'center',
+    },
+    notificationItem: {
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+        paddingVertical: 14,
+        paddingHorizontal: 4,
+        borderBottomWidth: 1,
+        borderBottomColor: 'rgba(255,255,255,0.06)',
+    },
+    notificationIconWrap: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginRight: 14,
+    },
+    notificationContent: {
+        flex: 1,
+    },
+    notificationTitle: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: '#FFFFFF',
+        marginBottom: 4,
+    },
+    notificationBody: {
+        fontSize: 14,
+        color: 'rgba(255,255,255,0.75)',
+        lineHeight: 20,
     },
 
     amountDisplay: {
