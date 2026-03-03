@@ -39,15 +39,25 @@ export function useBudgetCalculations(userInfo) {
         const formatDate = (date) =>
             date ? date.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }) : '--';
 
-        const avgDailySpend = daysPassed ? Math.round(spentToday / daysPassed) : 0;
+        const totalSpentTillNow = dailySpending.reduce((sum, item) => sum + item.amount, 0);
+        const totalBudget = userInfo?.totalBudget ?? 0;
+        const avgDailySpend = daysPassed ? Math.round(totalSpentTillNow / daysPassed) : 0;
         const expectedSpendTillNow =
             dailyBudget && startDate && endDate
                 ? Math.round((dailyBudget / (remainingDays + daysPassed)) * daysPassed)
                 : 0;
-        const isOverspending = spentToday > avgDailySpend * daysPassed;
+        const isOverspending = totalSpentTillNow > expectedSpendTillNow;
 
-        const totalSpentTillNow = dailySpending.reduce((sum, item) => sum + item.amount, 0);
-        const totalBudget = userInfo?.totalBudget ?? 0;
+        // Spending by label (top 8, sorted by amount desc)
+        const spendingByLabel = dailySpending.reduce((acc, item) => {
+            const label = item.label?.trim() || 'Other';
+            acc[label] = (acc[label] || 0) + item.amount;
+            return acc;
+        }, {});
+        const topLabelsBySpend = Object.entries(spendingByLabel)
+            .map(([label, amount]) => ({ label, amount }))
+            .sort((a, b) => b.amount - a.amount)
+            .slice(0, 8);
         const remainingTotalBudget = Math.max(totalBudget - totalSpentTillNow, 0);
         const totalSpentPercentage = totalBudget
             ? Math.min((totalSpentTillNow / totalBudget) * 100, 100)
@@ -75,6 +85,7 @@ export function useBudgetCalculations(userInfo) {
             remainingTotalBudget,
             totalSpentPercentage,
             totalRemainingPercentage,
+            topLabelsBySpend,
         };
     }, [userInfo]);
 }

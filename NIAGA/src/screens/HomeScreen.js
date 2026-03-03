@@ -10,6 +10,7 @@ import {
     TouchableOpacity,
     Modal,
     Animated,
+    ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -19,6 +20,7 @@ import { AuthContext } from '../context/AuthContext';
 import client from '../api/client';
 import { CustomButton } from '../components/Button';
 import { Keypad } from '../components/home/Keypad';
+import { DraggableBottomSheet } from '../components/DraggableBottomSheet';
 import { useBudgetCalculations } from '../hooks/useBudgetCalculations';
 
 import background from '../../assets/background.jpg';
@@ -54,8 +56,13 @@ const HomeScreen = ({ navigation }) => {
         remainingTotalBudget,
         totalRemainingPercentage,
         avgDailySpend,
+        expectedSpendTillNow,
         isOverspending,
+        topLabelsBySpend,
     } = budget;
+
+    const analyticsDangerColor = theme === 'dark' ? colors.secondary : '#E53935';
+    const analyticsSuccessColor = '#2E7D32';
 
     useEffect(() => {
         refreshUserData();
@@ -272,33 +279,16 @@ const HomeScreen = ({ navigation }) => {
                 /> */}
 
                 {/* 📊 BUDGET SHEET */}
-                <Modal
+                <DraggableBottomSheet
                     visible={showBudgetSheet}
-                    transparent
-                    animationType="slide"
-                    onRequestClose={() => setShowBudgetSheet(false)}
+                    onClose={() => setShowBudgetSheet(false)}
+                    sheetStyle={{ backgroundColor: '#121318' }}
                 >
-                    <TouchableOpacity
-                        style={styles.sheetOverlay}
-                        activeOpacity={1}
-                        onPress={() => setShowBudgetSheet(false)}
-                    />
+                    <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
+                        <Text style={styles.sheetTitle}>Budget</Text>
 
-                    {/* <ImageBackground
-                        source={background}
-                        style={styles.bottomSheet}
-                        imageStyle={{ borderTopLeftRadius: 24, borderTopRightRadius: 24 }}
-                    > */}
-                    <View style={styles.bottomSheet}>
+                        <View style={styles.budgetCard}>
 
-                        <View style={styles.sheetInner}>
-                            <View style={styles.sheetHandle} />
-
-                            <Text style={styles.sheetTitle}>Budget</Text>
-
-                            <View style={styles.budgetCard}>
-
-                                {/* 👆 TOGGLER ROW */}
                                 <TouchableOpacity
                                     style={styles.budgetTopRow}
                                     activeOpacity={0.8}
@@ -353,17 +343,6 @@ const HomeScreen = ({ navigation }) => {
                                     )}
                                 </TouchableOpacity>
 
-                                {/* 📊 PROGRESS BAR (always visible) */}
-                                {/* <View style={styles.progressBar}>
-                                    <View
-                                        style={[
-                                            styles.progressFill,
-                                            { width: `${spentPercentage}%` },
-                                        ]}
-                                    />
-                                </View> */}
-
-                                {/* 🧠 HINT */}
                                 <Text style={styles.tapHint}>
                                     {showDetails ? 'Tap to view spent' : 'Tap to view remaining'}
                                 </Text>
@@ -372,7 +351,6 @@ const HomeScreen = ({ navigation }) => {
 
                             <View style={styles.budgetInfoRow}>
 
-                                {/* 📦 LEFT BOX — STARTING BUDGET */}
                                 <View style={styles.startBudgetBox}>
                                     <Text style={styles.infoAmount}>₹{dailyBudget}</Text>
                                     <Text style={styles.infoLabel}>Starting Budget</Text>
@@ -381,7 +359,6 @@ const HomeScreen = ({ navigation }) => {
                                     </Text>
                                 </View>
 
-                                {/* 📦 RIGHT BOX — DAYS LEFT */}
                                 <View style={styles.daysLeftBox}>
                                     <Text style={styles.daysNumber}>{remainingDays}</Text>
                                     <Text style={styles.daysLabel}>Days Left</Text>
@@ -411,82 +388,131 @@ const HomeScreen = ({ navigation }) => {
                                 theme={theme}
                                 style={{ marginTop: 20 }}
                             />
-                        </View>
-                    </View>
+                    </ScrollView>
+                </DraggableBottomSheet>
 
-                    {/* </ImageBackground> */}
-                </Modal>
-
-                <Modal
+                <DraggableBottomSheet
                     visible={showAnalyticsSheet}
-                    transparent
-                    animationType="slide"
-                    onRequestClose={() => setShowAnalyticsSheet(false)}
+                    onClose={() => setShowAnalyticsSheet(false)}
+                    sheetStyle={{ backgroundColor: colors.surface || '#1E1E1E' }}
                 >
-                    <TouchableOpacity
-                        style={styles.sheetOverlay}
-                        activeOpacity={1}
-                        onPress={() => setShowAnalyticsSheet(false)}
-                    />
+                    <View style={{ flex: 1, minHeight: 0 }}>
+                        <Text style={[styles.sheetTitle, { color: colors.text }]}>Analytics</Text>
+                        <ScrollView
+                            style={[styles.analyticsScroll, { flex: 1 }]}
+                            showsVerticalScrollIndicator={false}
+                            bounces={false}
+                        >
+                            {/* Today */}
+                            <Text style={[styles.analyticsSectionTitle, { color: colors.textMuted, marginTop: 0 }]}>Today</Text>
+                            <View style={[styles.analyticsBlock, { backgroundColor: colors.card || '#2A2A2A' }]}>
+                                <View style={styles.analyticsRow}>
+                                    <Text style={[styles.analyticsLabel, { color: colors.textSecondary }]}>Spent</Text>
+                                    <Text style={[styles.analyticsValue, { color: analyticsDangerColor }]}>
+                                        ₹{spentToday}
+                                    </Text>
+                                </View>
+                                <View style={styles.analyticsRow}>
+                                    <Text style={[styles.analyticsLabel, { color: colors.textSecondary }]}>Remaining</Text>
+                                    <Text style={[styles.analyticsValue, { color: analyticsSuccessColor }]}>
+                                        ₹{remainingBudget}
+                                    </Text>
+                                </View>
+                                <View style={styles.analyticsRow}>
+                                    <Text style={[styles.analyticsLabel, { color: colors.textSecondary }]}>Daily budget used</Text>
+                                    <Text style={[styles.analyticsValue, { color: colors.text }]}>
+                                        {spentPercentage.toFixed(0)}%
+                                    </Text>
+                                </View>
+                            </View>
 
-                    <View style={styles.analyticsSheet}>
-                        <View style={styles.sheetHandle} />
-
-                        <Text style={styles.sheetTitle}>Analytics</Text>
-
-                        {/* 📊 Spent vs Remaining */}
-                        <View style={styles.analyticsRow}>
-                            <Text style={styles.analyticsLabel}>Spent</Text>
-                            <Text style={[styles.analyticsValue, { color: '#E53935' }]}>
-                                ₹{spentToday}
+                            {/* This period */}
+                            <Text style={[styles.analyticsSectionTitle, { color: colors.textMuted }]}>
+                                This period ({formatDate(startDate)} – {formatDate(endDate)})
                             </Text>
-                        </View>
+                            <View style={[styles.analyticsBlock, { backgroundColor: colors.card || '#2A2A2A' }]}>
+                                <View style={styles.analyticsRow}>
+                                    <Text style={[styles.analyticsLabel, { color: colors.textSecondary }]}>Total spent</Text>
+                                    <Text style={[styles.analyticsValue, { color: analyticsDangerColor }]}>
+                                        ₹{totalSpentTillNow}
+                                    </Text>
+                                </View>
+                                <View style={styles.analyticsRow}>
+                                    <Text style={[styles.analyticsLabel, { color: colors.textSecondary }]}>Total remaining</Text>
+                                    <Text style={[styles.analyticsValue, { color: analyticsSuccessColor }]}>
+                                        ₹{remainingTotalBudget}
+                                    </Text>
+                                </View>
+                                <View style={styles.analyticsRow}>
+                                    <Text style={[styles.analyticsLabel, { color: colors.textSecondary }]}>Budget used</Text>
+                                    <Text style={[styles.analyticsValue, { color: colors.text }]}>
+                                        {totalSpentPercentage.toFixed(0)}%
+                                    </Text>
+                                </View>
+                                <View style={styles.progressBar}>
+                                    <View
+                                        style={[
+                                            styles.progressFill,
+                                            { width: `${Math.min(totalSpentPercentage, 100)}%`, backgroundColor: analyticsDangerColor },
+                                        ]}
+                                    />
+                                </View>
+                                <View style={styles.analyticsRow}>
+                                    <Text style={[styles.analyticsLabel, { color: colors.textSecondary }]}>Avg per day</Text>
+                                    <Text style={[styles.analyticsValue, { color: colors.text }]}>
+                                        ₹{avgDailySpend}
+                                    </Text>
+                                </View>
+                                <View style={styles.analyticsRow}>
+                                    <Text style={[styles.analyticsLabel, { color: colors.textSecondary }]}>Expected so far</Text>
+                                    <Text style={[styles.analyticsValue, { color: colors.text }]}>
+                                        ₹{expectedSpendTillNow}
+                                    </Text>
+                                </View>
+                            </View>
 
-                        <View style={styles.analyticsRow}>
-                            <Text style={styles.analyticsLabel}>Remaining</Text>
-                            <Text style={[styles.analyticsValue, { color: '#2E7D32' }]}>
-                                ₹{remainingBudget}
-                            </Text>
-                        </View>
+                            {/* Status */}
+                            <View style={[styles.analyticsStatus, { backgroundColor: (colors.border || 'rgba(255,255,255,0.05)') }]}>
+                                <Text
+                                    style={[
+                                        styles.statusText,
+                                        { color: isOverspending ? analyticsDangerColor : analyticsSuccessColor },
+                                    ]}
+                                >
+                                    {isOverspending
+                                        ? 'You are overspending'
+                                        : 'You are on track'}
+                                </Text>
+                            </View>
 
-                        {/* 📈 Usage */}
-                        <View style={styles.analyticsRow}>
-                            <Text style={styles.analyticsLabel}>Budget Used</Text>
-                            <Text style={styles.analyticsValue}>
-                                {spentPercentage.toFixed(0)}%
-                            </Text>
-                        </View>
+                            {/* Spending by label */}
+                            {topLabelsBySpend.length > 0 && (
+                                <>
+                                    <Text style={[styles.analyticsSectionTitle, { color: colors.textMuted }]}>Spending by category</Text>
+                                    <View style={[styles.analyticsBlock, { backgroundColor: colors.card || '#2A2A2A' }]}>
+                                        {topLabelsBySpend.map(({ label, amount }) => (
+                                            <View key={label} style={styles.analyticsRow}>
+                                                <Text style={[styles.analyticsLabel, { color: colors.textSecondary }]} numberOfLines={1}>
+                                                    {label}
+                                                </Text>
+                                                <Text style={[styles.analyticsValue, { color: colors.text }]}>
+                                                    ₹{amount}
+                                                </Text>
+                                            </View>
+                                        ))}
+                                    </View>
+                                </>
+                            )}
 
-                        {/* 📅 Average */}
-                        <View style={styles.analyticsRow}>
-                            <Text style={styles.analyticsLabel}>Avg / Day</Text>
-                            <Text style={styles.analyticsValue}>
-                                ₹{avgDailySpend}
-                            </Text>
-                        </View>
-
-                        {/* ⚠️ Status */}
-                        <View style={styles.analyticsStatus}>
-                            <Text
-                                style={[
-                                    styles.statusText,
-                                    { color: isOverspending ? '#E53935' : '#2E7D32' },
-                                ]}
-                            >
-                                {isOverspending
-                                    ? 'You are overspending'
-                                    : 'You are on track'}
-                            </Text>
-                        </View>
-
-                        <CustomButton
-                            title="Close"
-                            onPress={() => setShowAnalyticsSheet(false)}
-                            theme={theme}
-                            style={{ marginTop: 20 }}
-                        />
+                            <CustomButton
+                                title="Close"
+                                onPress={() => setShowAnalyticsSheet(false)}
+                                theme={theme}
+                                style={{ marginTop: 20, marginBottom: 24 }}
+                            />
+                        </ScrollView>
                     </View>
-                </Modal>
+                </DraggableBottomSheet>
 
 
             </SafeAreaView>
@@ -737,10 +763,29 @@ const styles = StyleSheet.create({
         bottom: 0,
         left: 0,
         right: 0,
-        backgroundColor: '#1E1E1E',
+        maxHeight: '88%',
         borderTopLeftRadius: 24,
         borderTopRightRadius: 24,
         padding: 20,
+    },
+
+    analyticsScroll: {
+        minHeight: 0,
+    },
+
+    analyticsSectionTitle: {
+        fontSize: 12,
+        fontWeight: '600',
+        textTransform: 'uppercase',
+        letterSpacing: 0.5,
+        marginBottom: 8,
+        marginTop: 16,
+    },
+
+    analyticsBlock: {
+        borderRadius: 12,
+        padding: 14,
+        marginBottom: 4,
     },
 
     analyticsRow: {

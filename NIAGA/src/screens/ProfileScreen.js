@@ -1,4 +1,4 @@
-import React, { useContext } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import {
     View,
     Text,
@@ -7,35 +7,98 @@ import {
     ScrollView,
     TouchableOpacity,
     Linking,
+    RefreshControl,
+    Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '../theme/colors';
 import { CustomButton } from '../components/Button';
 import { AuthContext } from '../context/AuthContext';
+import { useBudgetCalculations } from '../hooks/useBudgetCalculations';
 import { Ionicons } from '@expo/vector-icons';
 
 const ProfileScreen = ({ navigation }) => {
     const scheme = useColorScheme();
     const theme = scheme === 'dark' ? 'dark' : 'light';
     const colors = Colors[theme];
-    const { logout, userInfo } = useContext(AuthContext);
+    const { logout, userInfo, refreshUserData } = useContext(AuthContext);
+    const [refreshing, setRefreshing] = useState(false);
 
-    const handleLogout = () => {
-        logout();
-        navigation.reset({
-            index: 0,
-            routes: [{ name: 'Welcome' }],
-        });
+    const budget = useBudgetCalculations(userInfo);
+    const {
+        totalSpentPercentage,
+        totalBudget,
+        isOverspending,
+        topLabelsBySpend,
+        formatDate,
+        startDate,
+        endDate,
+    } = budget;
+
+    const topCategory = topLabelsBySpend[0]?.label || null;
+    const budgetDisciplineLabel =
+        totalBudget > 0
+            ? totalSpentPercentage <= 100
+                ? `${Math.round(totalSpentPercentage)}% used`
+                : 'Over budget'
+            : '—';
+    const spendingStyleLabel = totalBudget > 0
+        ? (isOverspending ? 'Overspending' : 'On track')
+        : '—';
+
+    const budgetCycleLabel =
+        startDate && endDate
+            ? `${formatDate(startDate)} – ${formatDate(endDate)}`
+            : userInfo?.isBudgetAssigned
+                ? 'Active'
+                : 'Not set';
+
+    useEffect(() => {
+        refreshUserData();
+    }, []);
+
+    const onRefresh = async () => {
+        setRefreshing(true);
+        try {
+            await refreshUserData();
+        } finally {
+            setRefreshing(false);
+        }
     };
 
-    // ---- Mock derived insights (replace with real analytics later)
-    const budgetDiscipline = 78;
-    const spendingStyle = 'Balanced';
-    const topCategory = 'Food & Transport';
+    const handleLogout = () => {
+        Alert.alert(
+            'Log out',
+            'Are you sure you want to log out?',
+            [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                    text: 'Log out',
+                    style: 'destructive',
+                    onPress: () => {
+                        logout();
+                        navigation.reset({
+                            index: 0,
+                            routes: [{ name: 'Welcome' }],
+                        });
+                    },
+                },
+            ]
+        );
+    };
+
+    const handleSecurityComingSoon = () => {
+        Alert.alert('Coming soon', 'This feature is not available yet.');
+    };
 
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-            <ScrollView showsVerticalScrollIndicator={false}>
+            <ScrollView
+                showsVerticalScrollIndicator={false}
+                refreshControl={
+                    <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.primary]} />
+                }
+            >
                 {/* ================= Profile Header ================= */}
                 <View style={[styles.profileCard, { backgroundColor: colors.card }]}>
                     <UserAvatar color={colors.primary} name={userInfo?.name || 'User'} />
@@ -55,14 +118,14 @@ const ProfileScreen = ({ navigation }) => {
                 {/* ================= Financial Snapshot ================= */}
                 <View style={styles.row}>
                     <InfoCard
-                        title="Budget Discipline"
-                        value={`${budgetDiscipline}%`}
-                        subtitle="Days within budget"
+                        title="Budget"
+                        value={budgetDisciplineLabel}
+                        subtitle={totalBudget > 0 ? 'This period' : 'No budget set'}
                         colors={colors}
                     />
                     <InfoCard
                         title="Spending Style"
-                        value={spendingStyle}
+                        value={spendingStyleLabel}
                         subtitle="Based on behavior"
                         colors={colors}
                     />
@@ -74,35 +137,47 @@ const ProfileScreen = ({ navigation }) => {
                         🧠 Spending Insight
                     </Text>
                     <Text style={[styles.insightText, { color: colors.textSecondary }]}>
-                        You mostly spend on <Text style={{ color: colors.primary }}>{topCategory}</Text>.
+                        {topCategory
+                            ? <>You mostly spend on <Text style={{ color: colors.primary }}>{topCategory}</Text>.</>
+                            : 'Add spending to see insights.'}
                     </Text>
                 </View>
 
                 {/* ================= Preferences ================= */}
                 <Section title="Preferences" colors={colors}>
-                    <SettingRow label="Lifestyle" value={userInfo?.lifestyle || 'Not set'} />
-                    <SettingRow label="Spending Preference" value={userInfo?.spendingPreference || 'Not set'} />
-                    <SettingRow label="Budget Cycle" value="Monthly" />
+                    <SettingRow label="Lifestyle" value={userInfo?.lifestyle || 'Not set'} colors={colors} />
+                    <SettingRow label="Spending Preference" value={userInfo?.spendingPreference || 'Not set'} colors={colors} />
+                    <SettingRow label="Budget Cycle" value={budgetCycleLabel} colors={colors} />
                 </Section>
 
                 {/* ================= Security ================= */}
                 <Section title="Security" colors={colors}>
-                    <SettingRow label="Change Password" />
-                    <SettingRow label="Security Question" />
+                    <SettingRow
+                        label="Change Password"
+                        onPress={handleSecurityComingSoon}
+                        colors={colors}
+                    />
+                    <SettingRow
+                        label="Security Question"
+                        onPress={handleSecurityComingSoon}
+                        colors={colors}
+                    />
                 </Section>
 
                 {/* ================= Support ================= */}
                 <Section title="Support" colors={colors}>
                     <TouchableOpacity
-                        style={styles.settingRow}
+                        style={[styles.settingRow, { borderColor: colors.border }]}
                         activeOpacity={0.7}
                         onPress={() => Linking.openURL('mailto:niaga.co.official@gmail.com')}
+                        accessibilityRole="button"
+                        accessibilityLabel="Contact us by email"
                     >
                         <View>
-                            <Text style={styles.settingLabel}>Contact Us</Text>
-                            <Text style={styles.settingValue}>niaga.co.official@gmail.com</Text>
+                            <Text style={[styles.settingLabel, { color: colors.text }]}>Contact Us</Text>
+                            <Text style={[styles.settingValue, { color: colors.textSecondary }]}>niaga.co.official@gmail.com</Text>
                         </View>
-                        <Ionicons name="chevron-forward" size={18} color="#999" />
+                        <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
                     </TouchableOpacity>
                 </Section>
 
@@ -158,13 +233,18 @@ const Section = ({ title, children, colors }) => (
     </View>
 );
 
-const SettingRow = ({ label, value }) => (
-    <TouchableOpacity style={styles.settingRow} activeOpacity={0.7}>
+const SettingRow = ({ label, value, colors, onPress }) => (
+    <TouchableOpacity
+        style={[styles.settingRow, colors && { borderColor: colors.border }]}
+        activeOpacity={0.7}
+        onPress={onPress}
+        accessibilityRole={onPress ? 'button' : undefined}
+    >
         <View>
-            <Text style={styles.settingLabel}>{label}</Text>
-            {value && <Text style={styles.settingValue}>{value}</Text>}
+            <Text style={[styles.settingLabel, colors && { color: colors.text }]}>{label}</Text>
+            {value && <Text style={[styles.settingValue, colors && { color: colors.textSecondary }]}>{value}</Text>}
         </View>
-        <Ionicons name="chevron-forward" size={18} color="#999" />
+        <Ionicons name="chevron-forward" size={18} color={colors?.textMuted ?? '#999'} />
     </TouchableOpacity>
 );
 
