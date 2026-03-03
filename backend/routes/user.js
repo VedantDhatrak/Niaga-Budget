@@ -123,7 +123,51 @@ router.post('/daily-spending', auth, async (req, res) => {
     }
 });
 
+// Delete a single daily spending entry by subdocument _id
+router.delete('/daily-spending/:entryId', auth, async (req, res) => {
+    try {
+        const { entryId } = req.params;
+        const user = await User.findById(req.user.userId);
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+        const initialLength = user.dailySpending.length;
+        user.dailySpending.pull({ _id: entryId });
+        if (user.dailySpending.length === initialLength) {
+            return res.status(404).json({ message: 'Spending entry not found' });
+        }
+        await user.save();
+        const updatedUser = await User.findById(user._id).select('-password');
+        res.json(updatedUser);
+    } catch (err) {
+        console.error('Delete Spending Error:', err.message);
+        res.status(500).send('Server Error');
+    }
+});
 
+// Update a single daily spending entry by subdocument _id
+router.patch('/daily-spending/:entryId', auth, async (req, res) => {
+    try {
+        const { entryId } = req.params;
+        const { amount, label } = req.body;
+        const user = await User.findById(req.user.userId);
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+        const entry = user.dailySpending.id(entryId);
+        if (!entry) {
+            return res.status(404).json({ message: 'Spending entry not found' });
+        }
+        if (amount != null) entry.amount = Number(amount);
+        if (label != null) entry.label = String(label);
+        await user.save();
+        const updatedUser = await User.findById(user._id).select('-password');
+        res.json(updatedUser);
+    } catch (err) {
+        console.error('Update Spending Error:', err.message);
+        res.status(500).send('Server Error');
+    }
+});
 
 // Archive Current Budget
 router.post('/archive-budget', auth, async (req, res) => {

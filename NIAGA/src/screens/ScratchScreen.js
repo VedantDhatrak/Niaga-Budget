@@ -37,21 +37,26 @@ import {
     TouchableOpacity,
     ActivityIndicator,
     Alert,
+    Modal,
+    TextInput,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../theme/colors';
-import { AuthContext } from '../context/AuthContext'; // adjust path if needed
+import { AuthContext } from '../context/AuthContext';
+import client from '../api/client';
 
 const ScratchScreen = () => {
     const scheme = useColorScheme();
     const theme = scheme === 'dark' ? 'dark' : 'light';
     const colors = Colors[theme];
-
-
-    const { userInfo, refreshUserData } = useContext(AuthContext);
+    const { userInfo, userToken, refreshUserData } = useContext(AuthContext);
     const dailySpending = userInfo?.dailySpending ?? [];
     const [refreshing, setRefreshing] = useState(false);
+    const [editingItem, setEditingItem] = useState(null);
+    const [editLabel, setEditLabel] = useState('');
+    const [editAmount, setEditAmount] = useState('');
+    const [saving, setSaving] = useState(false);
 
     const handleRefresh = async () => {
         if (refreshing) return;
@@ -59,40 +64,110 @@ const ScratchScreen = () => {
         try {
             await refreshUserData();
         } catch (error) {
-            console.log("Refresh error:", error);
-            const errorMessage = error.message || "Failed to refresh history.";
-            Alert.alert("Error", errorMessage);
+            const errorMessage = error.message || 'Failed to refresh history.';
+            Alert.alert('Error', errorMessage);
         } finally {
             setRefreshing(false);
         }
     };
 
-
-
-    // Sort latest first
-    const sortedSpending = useMemo(() => {
-        return [...dailySpending].sort(
-            (a, b) => new Date(b.date) - new Date(a.date)
+    const handleDelete = (item) => {
+        Alert.alert(
+            'Delete entry',
+            `Remove "${item.label}" (₹${item.amount})?`,
+            [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                    text: 'Delete',
+                    style: 'destructive',
+                    onPress: async () => {
+                        if (!item._id) return;
+                        try {
+                            await client.delete(`/user/daily-spending/${item._id}`, {
+                                headers: { 'x-auth-token': userToken },
+                            });
+                            await refreshUserData();
+                        } catch (err) {
+                            Alert.alert('Error', err.response?.data?.message || 'Failed to delete');
+                        }
+                    },
+                },
+            ]
         );
+    };
+
+    const openEdit = (item) => {
+        setEditingItem(item);
+        setEditLabel(item.label || '');
+        setEditAmount(String(item.amount || ''));
+    };
+
+    const closeEdit = () => {
+        setEditingItem(null);
+        setEditLabel('');
+        setEditAmount('');
+    };
+
+    const handleSaveEdit = async () => {
+        if (!editingItem?._id) return;
+        const amount = Number(editAmount);
+        if (!editLabel.trim() || isNaN(amount)) {
+            Alert.alert('Invalid', 'Enter a valid label and amount.');
+            return;
+        }
+        setSaving(true);
+        try {
+            await client.patch(
+                `/user/daily-spending/${editingItem._id}`,
+                { label: editLabel.trim(), amount },
+                { headers: { 'x-auth-token': userToken } }
+            );
+            await refreshUserData();
+            closeEdit();
+        } catch (err) {
+            Alert.alert('Error', err.response?.data?.message || 'Failed to update');
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const sortedSpending = useMemo(() => {
+        return [...dailySpending].sort((a, b) => new Date(b.date) - new Date(a.date));
     }, [dailySpending]);
+
+    const getSpendingKey = (item, index) => {
+        return item._id?.toString() ?? `spending-${String(item.date)}-${index}`;
+    };
 
     const renderItem = ({ item }) => {
         const dateObj = new Date(item.date);
-
         return (
             <View style={[styles.card, { backgroundColor: colors.card }]}>
-                <View>
-                    <Text style={[styles.label, { color: colors.text }]}>
-                        {item.label}
-                    </Text>
+                <View style={styles.cardLeft}>
+                    <Text style={[styles.label, { color: colors.text }]}>{item.label}</Text>
                     <Text style={[styles.date, { color: colors.textMuted }]}>
                         {dateObj.toDateString()} • {dateObj.toLocaleTimeString()}
                     </Text>
                 </View>
-
-                <Text style={[styles.amount, { color: colors.primary }]}>
-                    ₹{item.amount}
-                </Text>
+                <View style={styles.cardRight}>
+                    <Text style={[styles.amount, { color: colors.primary }]}>₹{item.amount}</Text>
+                    <View style={styles.actions}>
+                        <TouchableOpacity
+                            onPress={() => openEdit(item)}
+                            style={styles.actionBtn}
+                            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                        >
+                            <Ionicons name="pencil" size={18} color={colors.primary} />
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            onPress={() => handleDelete(item)}
+                            style={styles.actionBtn}
+                            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                        >
+                            <Ionicons name="trash-outline" size={18} color="#E53935" />
+                        </TouchableOpacity>
+                    </View>
+                </View>
             </View>
         );
     };
@@ -122,12 +197,59 @@ const ScratchScreen = () => {
             ) : (
                 <FlatList
                     data={sortedSpending}
-                    keyExtractor={(item) => item._id}
+                    keyExtractor={(item, index) => getSpendingKey(item, index)}
                     renderItem={renderItem}
                     contentContainerStyle={styles.list}
                     showsVerticalScrollIndicator={false}
                 />
             )}
+
+            <Modal
+                visible={!!editingItem}
+                transparent
+                animationType="fade"
+                onRequestClose={closeEdit}
+            >
+                <View style={styles.modalOverlay}>
+                    <View style={[styles.modalContent, { backgroundColor: colors.card }]}>
+                        <Text style={[styles.modalTitle, { color: colors.text }]}>Edit entry</Text>
+                        <TextInput
+                            style={[styles.input, { color: colors.text, borderColor: colors.border }]}
+                            placeholder="Label"
+                            placeholderTextColor={colors.textMuted}
+                            value={editLabel}
+                            onChangeText={setEditLabel}
+                        />
+                        <TextInput
+                            style={[styles.input, { color: colors.text, borderColor: colors.border }]}
+                            placeholder="Amount"
+                            placeholderTextColor={colors.textMuted}
+                            value={editAmount}
+                            onChangeText={setEditAmount}
+                            keyboardType="numeric"
+                        />
+                        <View style={styles.modalButtons}>
+                            <TouchableOpacity
+                                style={[styles.modalButton, styles.cancelButton]}
+                                onPress={closeEdit}
+                            >
+                                <Text style={styles.cancelButtonText}>Cancel</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={[styles.modalButton, styles.saveButton]}
+                                onPress={handleSaveEdit}
+                                disabled={saving}
+                            >
+                                {saving ? (
+                                    <ActivityIndicator size="small" color="#fff" />
+                                ) : (
+                                    <Text style={styles.saveButtonText}>Save</Text>
+                                )}
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
         </SafeAreaView>
     );
 };
@@ -162,6 +284,10 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         elevation: 1,
     },
+    cardLeft: { flex: 1 },
+    cardRight: { alignItems: 'flex-end', gap: 6 },
+    actions: { flexDirection: 'row', gap: 12 },
+    actionBtn: { padding: 4 },
     label: {
         fontSize: 16,
         fontWeight: '600',
@@ -175,6 +301,29 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontWeight: '700',
     },
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        justifyContent: 'center',
+        padding: 20,
+    },
+    modalContent: {
+        borderRadius: 12,
+        padding: 20,
+    },
+    modalTitle: { fontSize: 18, fontWeight: '700', marginBottom: 16 },
+    input: {
+        borderWidth: 1,
+        borderRadius: 8,
+        padding: 12,
+        marginBottom: 12,
+    },
+    modalButtons: { flexDirection: 'row', gap: 12, marginTop: 8 },
+    modalButton: { flex: 1, padding: 14, borderRadius: 8, alignItems: 'center' },
+    cancelButton: { backgroundColor: '#555' },
+    cancelButtonText: { color: '#fff', fontWeight: '600' },
+    saveButton: { backgroundColor: '#2E7D32' },
+    saveButtonText: { color: '#fff', fontWeight: '600' },
     emptyText: {
         textAlign: 'center',
         marginTop: 40,

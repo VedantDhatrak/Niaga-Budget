@@ -4,13 +4,12 @@ import {
     Text,
     StyleSheet,
     useColorScheme,
-    FlatList,
     Alert,
     ImageBackground,
     TextInput,
     TouchableOpacity,
     Modal,
-    Animated, Easing
+    Animated,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -19,6 +18,8 @@ import { Colors } from '../theme/colors';
 import { AuthContext } from '../context/AuthContext';
 import client from '../api/client';
 import { CustomButton } from '../components/Button';
+import { Keypad } from '../components/home/Keypad';
+import { useBudgetCalculations } from '../hooks/useBudgetCalculations';
 
 import background from '../../assets/background.jpg';
 
@@ -26,194 +27,57 @@ const HomeScreen = ({ navigation }) => {
     const scheme = useColorScheme();
     const theme = scheme === 'dark' ? 'dark' : 'light';
     const colors = Colors[theme];
-
     const hintAnim = React.useRef(new Animated.Value(0)).current;
-
-
     const { userInfo, userToken, refreshUserData } = useContext(AuthContext);
 
     const [showBudgetSheet, setShowBudgetSheet] = useState(false);
-
-    // 🔢 Spending Entry
     const [amountInput, setAmountInput] = useState('');
     const [labelInput, setLabelInput] = useState('');
-    const [dailySpending, setDailySpending] = useState([]);
     const [showDetails, setShowDetails] = useState(false);
     const [showAnalyticsSheet, setShowAnalyticsSheet] = useState(false);
+    const [showTotalDetails, setShowTotalDetails] = useState(false);
 
+    const budget = useBudgetCalculations(userInfo);
+    const {
+        dailySpending,
+        spentToday,
+        remainingBudget,
+        spentPercentage,
+        remainingPercentage,
+        dailyBudget,
+        startDate,
+        endDate,
+        remainingDays,
+        formatDate,
+        totalSpentTillNow,
+        totalSpentPercentage,
+        remainingTotalBudget,
+        totalRemainingPercentage,
+        avgDailySpend,
+        isOverspending,
+    } = budget;
 
-
-    // Init from userInfo
     useEffect(() => {
         refreshUserData();
     }, []);
 
-    useEffect(() => {
-        console.log('HomeScreen userInfo:', JSON.stringify(userInfo, null, 2));
-        if (userInfo?.dailySpending) {
-            setDailySpending(userInfo.dailySpending);
-        }
-    }, [userInfo]);
-
-    useEffect(() => {
-        console.log('Budget Debug:', {
-            dailyBudget: userInfo?.dailyBudget,
-            spentToday,
-            remainingBudget,
-            daysPassed,
-            remainingDays
-        });
-    }, [userInfo, spentToday, remainingBudget, daysPassed, remainingDays]);
-    const isSameDay = (d1, d2) => {
-        const date1 = new Date(d1);
-        const date2 = new Date(d2);
-
-        if (isNaN(date1) || isNaN(date2)) return false;
-
-        return (
-            date1.getFullYear() === date2.getFullYear() &&
-            date1.getMonth() === date2.getMonth() &&
-            date1.getDate() === date2.getDate()
-        );
-    };
-
-
-    const today = new Date();
-    const todaySpending = React.useMemo(() => {
-        const now = new Date();
-        return dailySpending.filter(item =>
-            isSameDay(item.date, now)
-        );
-    }, [dailySpending]);
-
-    const spentToday = todaySpending.reduce(
-        (sum, item) => sum + item.amount,
-        0
-    );
-
-    const dailyBudget = userInfo?.dailyBudget ?? 0;
-    const remainingBudget = Math.max(dailyBudget - spentToday, 0);
-
-    const spentPercentage = dailyBudget
-        ? Math.min((spentToday / dailyBudget) * 100, 100)
-        : 0;
-
-    const remainingPercentage = 100 - spentPercentage;
-
-    const startDate = userInfo?.budgetStartDate
-        ? new Date(userInfo.budgetStartDate)
-        : null;
-
-    const endDate = userInfo?.budgetEndDate
-        ? new Date(userInfo.budgetEndDate)
-        : null;
-
-    const remainingDays =
-        startDate && endDate
-            ? Math.max(
-                Math.ceil(
-                    (endDate - new Date()) / (1000 * 60 * 60 * 24)
-                ),
-                0
-            )
-            : 0;
-
-    const formatDate = (date) =>
-        date
-            ? date.toLocaleDateString('en-IN', {
-                day: '2-digit',
-                month: 'short',
-            })
-            : '--';
-
-    const daysPassed =
-        startDate
-            ? Math.max(
-                Math.ceil(
-                    (new Date() - startDate) / (1000 * 60 * 60 * 24)
-                ),
-                1
-            )
-            : 1;
-
-    const avgDailySpend = spentToday
-        ? Math.round(spentToday / daysPassed)
-        : 0;
-
-    const expectedSpendTillNow =
-        dailyBudget && startDate && endDate
-            ? Math.round(
-                (dailyBudget / remainingDays + daysPassed) * daysPassed
-            )
-            : 0;
-
-    const isOverspending = spentToday > avgDailySpend * daysPassed;
-
-    const totalSpentTillNow = dailySpending.reduce(
-        (sum, item) => sum + item.amount,
-        0
-    );
-    const totalBudget = userInfo?.totalBudget ?? 0;
-    const remainingTotalBudget = Math.max(
-        totalBudget - totalSpentTillNow,
-        0
-    );
-    const totalSpentPercentage = totalBudget
-        ? Math.min((totalSpentTillNow / totalBudget) * 100, 100)
-        : 0;
-
-    const totalRemainingPercentage = 100 - totalSpentPercentage;
-    const [showTotalDetails, setShowTotalDetails] = useState(false);
-
-
-
-    // ➕ Add Spending
     const addSpending = async () => {
         if (!amountInput || !labelInput) {
             Alert.alert('Please enter amount and label');
             return;
         }
-
-        const entry = {
-            amount: Number(amountInput),
-            label: labelInput,
-        };
-
+        const entry = { amount: Number(amountInput), label: labelInput };
         try {
-            const res = await client.post('/user/daily-spending', entry, {
-                headers: { 'x-auth-token': userToken }
+            await client.post('/user/daily-spending', entry, {
+                headers: { 'x-auth-token': userToken },
             });
-
-            setDailySpending(res.data.dailySpending);
             setAmountInput('');
             setLabelInput('');
+            await refreshUserData();
         } catch (err) {
             Alert.alert('Failed to save spending');
         }
     };
-
-
-
-
-    // 🔢 Keypad Button
-    const renderKey = (value) => (
-        <TouchableOpacity
-            key={value}
-            style={styles.key}
-            onPress={() => {
-                if (value === '⌫') {
-                    setAmountInput(prev => prev.slice(0, -1));
-                } else {
-                    setAmountInput(prev =>
-                        prev === '0' ? value : prev + value
-                    );
-                }
-            }}
-
-        >
-            <Text style={styles.keyText}>{value}</Text>
-        </TouchableOpacity>
-    );
 
     useEffect(() => {
         const animation = Animated.loop(
@@ -379,9 +243,7 @@ const HomeScreen = ({ navigation }) => {
                 />
 
                 {/* 🔢 KEYPAD */}
-                <View style={styles.keypad}>
-                    {['1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '⌫'].map(renderKey)}
-                </View>
+                <Keypad amountInput={amountInput} setAmountInput={setAmountInput} />
 
                 {/* ➕ ADD BUTTON */}
                 <CustomButton
@@ -687,25 +549,6 @@ const styles = StyleSheet.create({
         padding: 14,
         marginBottom: 10,
     },
-
-    keypad: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        justifyContent: 'space-between',
-        marginVertical: 10,
-    },
-
-    key: {
-        width: '30%',
-        height: 60,
-        marginBottom: 12,
-        borderRadius: 12,
-        backgroundColor: '#2F3035',
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-
-    keyText: { fontSize: 20, fontWeight: 'bold', color: "#FFFFFF" },
 
     sectionTitle: {
         fontSize: 18,

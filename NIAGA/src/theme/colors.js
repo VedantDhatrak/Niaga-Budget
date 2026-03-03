@@ -2,6 +2,8 @@ export const Colors = {
     light: {
         background: '#FFFFFF',
         text: '#000000',
+        textSecondary: '#555555',
+        textMuted: '#777777',
         primary: '#30457A',
         secondary: '#30457A',
         inputBackground: '#F0F0F0',
@@ -11,6 +13,8 @@ export const Colors = {
     dark: {
         background: '#121212',
         text: '#FFFFFF',
+        textSecondary: '#AAAAAA',
+        textMuted: '#888888',
         primary: '#30457A',
         secondary: '#FF5252',
         inputBackground: '#1E1E1E',
